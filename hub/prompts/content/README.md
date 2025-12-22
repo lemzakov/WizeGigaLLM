@@ -6,7 +6,7 @@
 ## Пример использования
 
 ```python
-from langchain.prompts import load_prompt
+from langchain_core.prompts import load_prompt
 from langchain.chains import LLMChain
 from langchain_gigachat import GigaChat
 

@@ -12,7 +12,7 @@
 
 ```python
 from langchain_gigachat import GigaChat
-from langchain.prompts import load_prompt
+from langchain_core.prompts import load_prompt
 from langchain.chains.summarize import load_summarize_chain
 
 giga = GigaChat(credentials="...")

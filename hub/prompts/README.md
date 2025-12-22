@@ -74,7 +74,7 @@ _type: prompt
 Пример использования шаблона:
 
 ```python
-from langchain.prompts import load_prompt
+from langchain_core.prompts import load_prompt
 
 synonyms_with_examples = load_prompt('hub/prompts/synonyms/intent_generation_with_examples.yaml')
 text = synonyms_with_examples.format(dataset_size_min=5,

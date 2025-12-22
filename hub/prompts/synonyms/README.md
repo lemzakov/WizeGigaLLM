@@ -17,7 +17,7 @@
 Пример генерации синонимов:
 
 ```python
-from langchain.prompts import load_prompt
+from langchain_core.prompts import load_prompt
 from langchain.chains import LLMChain
 
 llm = ...

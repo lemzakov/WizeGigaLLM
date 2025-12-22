@@ -11,7 +11,7 @@
 Пример вызова:
 
 ```python
-from langchain.prompts import load_prompt
+from langchain_core.prompts import load_prompt
 from langchain_gigachat import GigaChat
 from langchain.chains import LLMChain
 
