@@ -6,6 +6,8 @@
 import type { GigaChatConfig, ChatRequest, ChatResponse, AuthResponse } from '@/types/gigachat';
 
 class GigaAPIClient {
+  private static readonly TOKEN_EXPIRY_BUFFER_MS = 60000; // 60 seconds buffer before token expiry
+  
   private config: GigaChatConfig;
   private accessToken: string | null = null;
   private tokenExpiry: number = 0;
@@ -24,7 +26,7 @@ class GigaAPIClient {
    */
   private async getAccessToken(): Promise<string> {
     // Check if we have a valid token
-    if (this.accessToken && Date.now() < this.tokenExpiry - 60000) {
+    if (this.accessToken && Date.now() < this.tokenExpiry - GigaAPIClient.TOKEN_EXPIRY_BUFFER_MS) {
       return this.accessToken;
     }
 
