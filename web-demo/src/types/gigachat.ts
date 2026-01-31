@@ -1,5 +1,5 @@
 /**
- * Type definitions for GigaAPI integration
+ * Type definitions for GigaChat API integration
  */
 
 export interface GigaChatConfig {
