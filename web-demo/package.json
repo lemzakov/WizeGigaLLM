@@ -1,0 +1,30 @@
+{
+  "name": "wizegigallm-demo",
+  "version": "1.0.0",
+  "description": "Web-based demo application for WizeGigaLLM with GigaAPI integration",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "deploy": "vercel --prod"
+  },
+  "dependencies": {
+    "next": "^15.5.11",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "axios": "^1.7.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.2",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "eslint": "^9.26.0",
+    "eslint-config-next": "^15.5.11",
+    "typescript": "^5.4.5"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
