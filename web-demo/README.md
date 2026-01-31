@@ -103,6 +103,28 @@ The landing page provides:
 - Quick start guide
 - Links to documentation
 
+### Test Suite (`/test`)
+
+**NEW:** Comprehensive testing interface for deployment validation.
+
+The test page provides:
+- **Automated Tests**: One-click testing of API configuration, connection, chat endpoint, and error handling
+- **Feature Checklist**: Quick access to test all features individually
+- **Manual Testing Guide**: Step-by-step instructions for thorough testing
+- **Deployment Verification**: Checklist to ensure successful deployment
+
+**How to use:**
+1. Navigate to `http://localhost:3000/test` (or `https://your-deployment.vercel.app/test` in production)
+2. Click "🚀 Run All Tests" to execute automated tests
+3. Review test results for each feature
+4. Use the feature checklist to test individual components
+5. Follow manual testing instructions for comprehensive validation
+
+**Important for Deployment:**
+- Verify the test page is accessible at `/test` after deploying to Vercel
+- All automated tests should pass if environment variables are configured correctly
+- See [DEPLOYMENT_VALIDATION.md](./DEPLOYMENT_VALIDATION.md) for detailed deployment verification steps
+
 ### Chat Demo (`/chat`)
 
 Interactive chat interface where you can:

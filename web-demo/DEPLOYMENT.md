@@ -175,10 +175,39 @@ https://your-project-name.vercel.app
 
 ### 2. Test the Application
 
-1. **Visit Home Page**: Verify the landing page loads correctly
-2. **Check Settings**: Go to `/settings` and test the connection
-3. **Try Chat**: Navigate to `/chat` and send a test message
-4. **Test API Routes**: Ensure API endpoints are responding
+**IMPORTANT:** Always verify the test page is accessible after deployment.
+
+1. **Visit Test Page**: Navigate to `/test` and run automated tests
+   ```
+   https://your-project-name.vercel.app/test
+   ```
+   - Click "🚀 Run All Tests" button
+   - Verify all 4 tests pass (API Configuration, Connection, Chat Endpoint, Error Handling)
+   - Check that the page matches the expected layout (see screenshot in PR)
+
+2. **Visit Home Page**: Verify the landing page loads correctly
+   - Confirm "Run Tests" button navigates to `/test`
+
+3. **Check Settings**: Go to `/settings` and test the connection
+   - Click "Test Connection" button
+   - Verify successful connection message appears
+
+4. **Try Chat**: Navigate to `/chat` and send a test message
+   - Send a simple message like "Hello"
+   - Verify you receive a response from GigaChat
+
+5. **Test API Routes**: Ensure API endpoints are responding
+   - `/api/config` should return configuration
+   - `/api/chat` should handle chat requests
+
+**Validation Checklist:**
+- ✅ `/test` page loads and displays all sections
+- ✅ Automated tests can be executed
+- ✅ All navigation links work correctly
+- ✅ No 404 errors on any route
+- ✅ No console errors in browser (check F12 developer tools)
+
+For detailed deployment validation instructions, see [DEPLOYMENT_VALIDATION.md](./DEPLOYMENT_VALIDATION.md).
 
 ### 3. Configure Custom Domain (Optional)
 
