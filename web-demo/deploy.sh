@@ -1,11 +1,12 @@
 #!/bin/bash
 
 # Deployment script for WizeGigaLLM Web Demo to Vercel
-# This script automates the deployment process
+# This script automates the deployment process from the web-demo directory
 
 set -e  # Exit on error
 
 echo "🚀 Starting deployment process for WizeGigaLLM Web Demo..."
+echo ""
 
 # Check if we're in the web-demo directory
 if [ ! -f "package.json" ]; then
@@ -43,11 +44,17 @@ npm run build
 
 # Deploy to Vercel
 echo "🚀 Deploying to Vercel..."
+echo ""
+echo "NOTE: If using GitHub integration, make sure to set:"
+echo "      Root Directory: web-demo"
+echo "      in your Vercel project settings!"
+echo ""
 vercel --prod
 
 echo "✅ Deployment complete!"
 echo ""
 echo "📝 Next steps:"
-echo "   1. Visit your Vercel Dashboard to configure environment variables"
-echo "   2. Test your deployment"
-echo "   3. Share your demo URL!"
+echo "   1. If using GitHub integration, verify Root Directory is set to 'web-demo'"
+echo "   2. Visit your Vercel Dashboard to configure environment variables"
+echo "   3. Test your deployment at https://your-url.vercel.app/test"
+echo "   4. Share your demo URL!"
