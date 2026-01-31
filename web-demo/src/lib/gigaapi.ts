@@ -22,6 +22,18 @@ class GigaAPIClient {
   }
 
   /**
+   * Encode credentials to Base64 for Basic Authentication
+   */
+  private encodeCredentials(clientId: string, clientSecret: string): string {
+    const credentials = `${clientId}:${clientSecret}`;
+    // Use Buffer in Node.js environment or btoa in browser
+    if (typeof Buffer !== 'undefined') {
+      return Buffer.from(credentials).toString('base64');
+    }
+    return btoa(credentials);
+  }
+
+  /**
    * Get access token, refreshing if necessary
    */
   private async getAccessToken(): Promise<string> {
@@ -32,13 +44,14 @@ class GigaAPIClient {
 
     // Get new token
     const authUrl = `${this.config.baseUrl.replace('/v1', '')}/api/v2/oauth`;
+    const encodedCredentials = this.encodeCredentials(this.config.clientId, this.config.clientSecret);
     
     try {
       const response = await fetch(authUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
-          'Authorization': `Basic ${this.config.credentials}`,
+          'Authorization': `Basic ${encodedCredentials}`,
           'RqUID': this.generateRqUID(),
         },
         body: 'scope=GIGACHAT_API_PERS',
@@ -141,16 +154,18 @@ let clientInstance: GigaAPIClient | null = null;
  */
 export function getGigaAPIClient(): GigaAPIClient {
   if (!clientInstance) {
-    const credentials = process.env.GIGACHAT_CREDENTIALS;
+    const clientId = process.env.GIGACHAT_CLIENT_ID;
+    const clientSecret = process.env.GIGACHAT_CLIENT_SECRET;
     const baseUrl = process.env.GIGACHAT_BASE_URL || 'https://gigachat.devices.sberbank.ru/api/v1';
     const verifySSL = process.env.GIGACHAT_VERIFY_SSL_CERTS !== 'false';
 
-    if (!credentials) {
-      throw new Error('GIGACHAT_CREDENTIALS environment variable is not set');
+    if (!clientId || !clientSecret) {
+      throw new Error('GIGACHAT_CLIENT_ID and GIGACHAT_CLIENT_SECRET environment variables must be set');
     }
 
     clientInstance = new GigaAPIClient({
-      credentials,
+      clientId,
+      clientSecret,
       baseUrl,
       verifySSL,
     });

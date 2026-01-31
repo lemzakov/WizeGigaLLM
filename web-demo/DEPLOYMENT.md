@@ -74,7 +74,8 @@ In the project settings, add these environment variables:
 
 | Variable Name | Value |
 |--------------|-------|
-| `GIGACHAT_CREDENTIALS` | Your Base64-encoded GigaChat credentials |
+| `GIGACHAT_CLIENT_ID` | Your GigaChat Client ID (UUID format) |
+| `GIGACHAT_CLIENT_SECRET` | Your GigaChat Client Secret (Authorization Key) |
 | `GIGACHAT_BASE_URL` | `https://gigachat.devices.sberbank.ru/api/v1` |
 | `GIGACHAT_VERIFY_SSL_CERTS` | `false` (or `true` for production) |
 
@@ -118,7 +119,8 @@ After first deployment, add environment variables:
 
 ```bash
 # Set environment variables
-vercel env add GIGACHAT_CREDENTIALS
+vercel env add GIGACHAT_CLIENT_ID
+vercel env add GIGACHAT_CLIENT_SECRET
 vercel env add GIGACHAT_BASE_URL
 vercel env add GIGACHAT_VERIFY_SSL_CERTS
 
@@ -132,15 +134,16 @@ vercel --prod
 
 | Variable | Description | Example |
 |----------|-------------|---------|
-| `GIGACHAT_CREDENTIALS` | Base64-encoded authorization credentials | `your_base64_credentials` |
+| `GIGACHAT_CLIENT_ID` | Client ID (UUID format) | `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx` |
+| `GIGACHAT_CLIENT_SECRET` | Client Secret / Authorization Key | `your_auth_key_here` |
 | `GIGACHAT_BASE_URL` | GigaChat API base URL | `https://gigachat.devices.sberbank.ru/api/v1` |
 | `GIGACHAT_VERIFY_SSL_CERTS` | Whether to verify SSL certificates | `false` or `true` |
 
 ### How to Get GigaChat Credentials
 
-1. Visit [GigaChat Developer Portal](https://developers.sber.ru/docs/ru/gigachat/quickstart/ind-using-api)
+1. Visit [GigaChat Developer Portal](https://developers.sber.ru/docs/ru/gigachat/individuals-quickstart)
 2. Follow the registration process
-3. Generate API credentials
+3. Generate API credentials (you'll receive Client ID and Client Secret)
 4. Encode credentials in Base64 format
 
 ### Setting Environment Variables in Vercel

@@ -24,7 +24,8 @@ fi
 if [ ! -f ".env.local" ]; then
     echo "⚠️  Warning: .env.local not found."
     echo "   Make sure to configure environment variables in Vercel Dashboard:"
-    echo "   - GIGACHAT_CREDENTIALS"
+    echo "   - GIGACHAT_CLIENT_ID"
+    echo "   - GIGACHAT_CLIENT_SECRET"
     echo "   - GIGACHAT_BASE_URL"
     echo "   - GIGACHAT_VERIFY_SSL_CERTS"
     echo ""

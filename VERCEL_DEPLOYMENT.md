@@ -23,7 +23,8 @@ When deploying to Vercel, you **MUST** set the Root Directory to `web-demo` in t
    - Build Command: `npm run build` (default)
    - Output Directory: `.next` (default)
 6. Add environment variables:
-   - `GIGACHAT_CREDENTIALS`
+   - `GIGACHAT_CLIENT_ID`
+   - `GIGACHAT_CLIENT_SECRET`
    - `GIGACHAT_BASE_URL`
    - `GIGACHAT_VERIFY_SSL_CERTS`
 7. Deploy

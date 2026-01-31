@@ -51,7 +51,8 @@ vercel --prod
 ### 2. Configure Environment Variables
 
 In the Vercel Dashboard, add these environment variables:
-- `GIGACHAT_CREDENTIALS` - Your GigaChat API credentials
+- `GIGACHAT_CLIENT_ID` - Your GigaChat Client ID (UUID format)
+- `GIGACHAT_CLIENT_SECRET` - Your GigaChat Client Secret (Authorization Key)
 - `GIGACHAT_BASE_URL` - `https://gigachat.devices.sberbank.ru/api/v1`
 - `GIGACHAT_VERIFY_SSL_CERTS` - `false` (or `true` for production)
 
@@ -134,7 +135,7 @@ Navigate through all pages to ensure routing works:
    vercel --prod
    ```
 
-### Issue: Tests fail with "GIGACHAT_CREDENTIALS not set"
+### Issue: Tests fail with "Client ID or Secret not set"
 
 **Cause:** Environment variables not configured in Vercel.
 

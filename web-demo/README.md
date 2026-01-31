@@ -45,7 +45,8 @@ cp .env.example .env.local
 Edit `.env.local` and add your GigaChat API credentials:
 
 ```env
-GIGACHAT_CREDENTIALS=your_base64_encoded_credentials_here
+GIGACHAT_CLIENT_ID=your_client_id_here
+GIGACHAT_CLIENT_SECRET=your_client_secret_here
 GIGACHAT_BASE_URL=https://gigachat.devices.sberbank.ru/api/v1
 GIGACHAT_VERIFY_SSL_CERTS=false
 ```
@@ -190,7 +191,8 @@ This application is optimized for Vercel deployment.
    - Go to your project settings
    - Navigate to "Environment Variables"
    - Add the following variables:
-     - `GIGACHAT_CREDENTIALS`
+     - `GIGACHAT_CLIENT_ID`
+     - `GIGACHAT_CLIENT_SECRET`
      - `GIGACHAT_BASE_URL`
      - `GIGACHAT_VERIFY_SSL_CERTS`
 
@@ -281,8 +283,8 @@ body {
 **Problem**: "Failed to authenticate with GigaChat API"
 
 **Solutions**:
-1. Verify your `GIGACHAT_CREDENTIALS` is correctly set
-2. Check if credentials are Base64 encoded
+1. Verify your `GIGACHAT_CLIENT_ID` and `GIGACHAT_CLIENT_SECRET` are correctly set
+2. Ensure you have the correct Client ID (UUID format) and Client Secret
 3. Ensure you have network access to GigaChat API endpoints
 4. Try setting `GIGACHAT_VERIFY_SSL_CERTS=false` for development
 
