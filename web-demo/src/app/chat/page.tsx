@@ -125,7 +125,7 @@ export default function ChatPage() {
                 <p style={{ fontSize: '1.2rem', marginBottom: '10px' }}>👋 Welcome to GigaChat Demo!</p>
                 <p>Start a conversation by typing a message below.</p>
                 <p style={{ marginTop: '20px', fontSize: '0.9rem' }}>
-                  Try asking: "What can you help me with?" or "Tell me a joke in Russian"
+                  Try asking: &quot;What can you help me with?&quot; or &quot;Tell me a joke in Russian&quot;
                 </p>
               </div>
             ) : (
@@ -183,7 +183,7 @@ export default function ChatPage() {
           <li><strong>Language Support:</strong> GigaChat is optimized for Russian language, but also supports English</li>
           <li><strong>Context Awareness:</strong> The chat maintains conversation history for context</li>
           <li><strong>Keyboard Shortcuts:</strong> Press Enter to send, Shift+Enter for a new line</li>
-          <li><strong>Clear Chat:</strong> Use the "Clear Chat" button to start a fresh conversation</li>
+          <li><strong>Clear Chat:</strong> Use the &quot;Clear Chat&quot; button to start a fresh conversation</li>
           <li><strong>Error Handling:</strong> System messages (in yellow) indicate errors or important information</li>
         </ul>
       </div>
