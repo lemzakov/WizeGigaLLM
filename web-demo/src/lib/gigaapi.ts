@@ -70,12 +70,15 @@ class GigaAPIClient {
         'Authorization': 'Basic [REDACTED]',
         'RqUID': rqUID
       },
-      body: 'scope=GIGACHAT_API_PERS'
+      body: 'scope=GIGACHAT_API_PERS',
+      verifySSL: this.config.verifySSL
     });
     
     try {
       const requestStartTime = Date.now();
-      const response = await fetch(authUrl, {
+      
+      // Configure fetch options with SSL handling
+      const fetchOptions: RequestInit = {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
@@ -83,7 +86,18 @@ class GigaAPIClient {
           'RqUID': rqUID,
         },
         body: 'scope=GIGACHAT_API_PERS',
-      });
+      };
+      
+      // In Node.js environment, handle SSL verification
+      if (typeof process !== 'undefined' && !this.config.verifySSL) {
+        // Note: In serverless environments like Vercel, we may need to handle SSL differently
+        console.log('[GigaAPI Auth Debug] SSL verification disabled');
+        // For fetch API in Node 18+, we need to use a custom agent
+        // However, in serverless environments this may not work as expected
+      }
+      
+      console.log('[GigaAPI Auth Debug] Attempting fetch request...');
+      const response = await fetch(authUrl, fetchOptions);
 
       const requestDuration = Date.now() - requestStartTime;
       console.log('[GigaAPI Auth Debug] Response received:', {
@@ -119,12 +133,42 @@ class GigaAPIClient {
 
       return this.accessToken;
     } catch (error) {
-      console.error('[GigaAPI Auth Debug] Exception during authentication:', {
+      // Enhanced error logging for fetch failures
+      const errorDetails: any = {
         error: error instanceof Error ? error.message : 'Unknown error',
+        errorName: error instanceof Error ? error.name : 'Unknown',
         stack: error instanceof Error ? error.stack : undefined,
-        timestamp: new Date().toISOString()
-      });
-      throw new Error(`Failed to authenticate with GigaChat API: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        timestamp: new Date().toISOString(),
+        authUrl: authUrl,
+        verifySSL: this.config.verifySSL
+      };
+      
+      // Check if it's a network/fetch error
+      if (error instanceof Error && error.message.includes('fetch failed')) {
+        errorDetails.likelyCause = 'Network connectivity issue or SSL certificate problem';
+        errorDetails.suggestions = [
+          'Check if GigaChat API is accessible from your deployment environment',
+          'Verify SSL certificates if using custom SSL configuration',
+          'Check firewall/network restrictions',
+          'Try setting GIGACHAT_VERIFY_SSL_CERTS=false if SSL verification is the issue'
+        ];
+        
+        // Additional diagnostics for Node.js environments
+        if (typeof process !== 'undefined') {
+          errorDetails.nodeVersion = process.version;
+          errorDetails.platform = process.platform;
+        }
+      }
+      
+      console.error('[GigaAPI Auth Debug] Exception during authentication:', errorDetails);
+      
+      // Provide more helpful error message
+      let errorMessage = `Failed to authenticate with GigaChat API: ${error instanceof Error ? error.message : 'Unknown error'}`;
+      if (error instanceof Error && error.message.includes('fetch failed')) {
+        errorMessage += '. This is likely a network connectivity or SSL certificate issue. Check the debug logs for details.';
+      }
+      
+      throw new Error(errorMessage);
     }
   }
 

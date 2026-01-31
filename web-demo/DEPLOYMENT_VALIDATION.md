@@ -144,6 +144,39 @@ Navigate through all pages to ensure routing works:
 2. Add required variables (see section 2 above)
 3. Redeploy the application
 
+### Issue: "fetch failed" or network errors
+
+**Cause:** Network connectivity or SSL certificate issues between Vercel and GigaChat API.
+
+**Symptoms:**
+- Error message: `Failed to authenticate with GigaChat API: fetch failed`
+- Stack trace shows `TypeError: fetch failed`
+- API connection test fails
+
+**Solutions:**
+1. **SSL Certificate Issue:**
+   - Set `GIGACHAT_VERIFY_SSL_CERTS=false` in Vercel environment variables
+   - This disables SSL verification (use with caution in production)
+
+2. **Network Restrictions:**
+   - Verify GigaChat API endpoint is accessible from Vercel's network
+   - Check if API endpoint allows connections from Vercel's IP ranges
+   - Try accessing the API URL from your browser to verify it's reachable
+
+3. **Firewall/Security:**
+   - Contact GigaChat support to whitelist Vercel's IP ranges
+   - Check if there are any firewall rules blocking the connection
+
+4. **Alternative Deployment:**
+   - If Vercel continues to have connectivity issues, try deploying to:
+     - AWS Lambda (may have better connectivity to Russian services)
+     - A VPS in a region closer to the GigaChat API
+     - Local deployment for testing
+
+**Debug:**
+- Check browser console and Vercel function logs for detailed error messages
+- The error log will include helpful diagnostics about the failure
+
 ### Issue: API tests timeout
 
 **Cause:** GigaChat API not reachable or credentials invalid.

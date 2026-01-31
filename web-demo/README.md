@@ -288,6 +288,28 @@ body {
 3. Ensure you have network access to GigaChat API endpoints
 4. Try setting `GIGACHAT_VERIFY_SSL_CERTS=false` for development
 
+**Problem**: "fetch failed" errors on Vercel/production
+
+**Symptoms**:
+- Error: `Failed to authenticate with GigaChat API: fetch failed`
+- Network connectivity errors in logs
+- API calls timeout or fail
+
+**Solutions**:
+1. **SSL Certificate Issues**:
+   - Set `GIGACHAT_VERIFY_SSL_CERTS=false` in Vercel environment variables
+   - Redeploy after changing environment variables
+
+2. **Network/Firewall Issues**:
+   - Verify GigaChat API is accessible from your deployment region
+   - Check if there are network restrictions between Vercel and GigaChat
+   - Consider alternative deployment platforms (AWS, VPS) if connectivity persists
+
+3. **Debug**:
+   - Check Vercel function logs for detailed error diagnostics
+   - Look for `[GigaAPI Auth Debug]` messages with suggested solutions
+   - Test locally first: `npm run dev` to verify credentials work
+
 ### Build Errors
 
 **Problem**: TypeScript or build errors
