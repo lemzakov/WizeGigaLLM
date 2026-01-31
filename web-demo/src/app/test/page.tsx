@@ -23,6 +23,14 @@ export default function TestPage() {
     { test: 'Error Handling', status: 'pending' },
   ]);
   const [running, setRunning] = useState(false);
+  const [debugLogs, setDebugLogs] = useState<string[]>([]);
+
+  const addDebugLog = (message: string) => {
+    const timestamp = new Date().toISOString();
+    const logMessage = `[${timestamp}] ${message}`;
+    console.log(logMessage);
+    setDebugLogs(prev => [...prev, logMessage]);
+  };
 
   const updateTestResult = (index: number, status: TestResult['status'], message?: string) => {
     setTestResults(prev => {
@@ -39,46 +47,69 @@ export default function TestPage() {
 
   const runAllTests = async () => {
     setRunning(true);
+    setDebugLogs([]);
     
     // Reset all tests
     setTestResults(prev => prev.map(test => ({ ...test, status: 'pending' as const })));
+    
+    addDebugLog('🚀 Starting test suite...');
 
     // Test 1: API Configuration
+    addDebugLog('📋 Test 1: Checking API Configuration...');
     updateTestResult(0, 'running');
     await new Promise(resolve => setTimeout(resolve, 500));
     try {
+      addDebugLog('  → Fetching /api/config...');
       const configResponse = await fetch('/api/config');
+      addDebugLog(`  → Response status: ${configResponse.status}`);
       const configData = await configResponse.json();
+      addDebugLog(`  → Config data: ${JSON.stringify(configData, null, 2)}`);
       
       if (configData.success && configData.config) {
+        addDebugLog('  ✅ Configuration loaded successfully');
         updateTestResult(0, 'success', 'Configuration loaded successfully');
       } else {
+        addDebugLog('  ❌ Failed to load configuration');
         updateTestResult(0, 'error', 'Failed to load configuration');
       }
     } catch (error) {
-      updateTestResult(0, 'error', `Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      addDebugLog(`  ❌ Error: ${errorMsg}`);
+      updateTestResult(0, 'error', `Error: ${errorMsg}`);
     }
 
     // Test 2: API Connection
+    addDebugLog('🔌 Test 2: Testing API Connection...');
     updateTestResult(1, 'running');
     await new Promise(resolve => setTimeout(resolve, 500));
     try {
+      addDebugLog('  → Sending connection test request to /api/config (POST)...');
       const connectionResponse = await fetch('/api/config', { method: 'POST' });
+      addDebugLog(`  → Response status: ${connectionResponse.status}`);
       const connectionData = await connectionResponse.json();
+      addDebugLog(`  → Connection data: ${JSON.stringify(connectionData, null, 2)}`);
       
       if (connectionData.connected) {
+        addDebugLog('  ✅ Successfully connected to GigaChat API');
         updateTestResult(1, 'success', 'Successfully connected to GigaChat API');
       } else {
-        updateTestResult(1, 'error', `Connection failed: ${connectionData.error || 'Unknown error'}`);
+        const errorMsg = connectionData.error || 'Unknown error';
+        addDebugLog(`  ❌ Connection failed: ${errorMsg}`);
+        updateTestResult(1, 'error', `Connection failed: ${errorMsg}`);
       }
     } catch (error) {
-      updateTestResult(1, 'error', `Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      addDebugLog(`  ❌ Error: ${errorMsg}`);
+      updateTestResult(1, 'error', `Error: ${errorMsg}`);
     }
 
     // Test 3: Chat Endpoint
+    addDebugLog('💬 Test 3: Testing Chat Endpoint...');
     updateTestResult(2, 'running');
     await new Promise(resolve => setTimeout(resolve, 500));
     try {
+      addDebugLog('  → Sending chat request to /api/chat...');
+      addDebugLog('  → Request: { model: "GigaChat", messages: [{ role: "user", content: "Hello! This is a test message." }] }');
       const chatResponse = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -88,39 +119,56 @@ export default function TestPage() {
         }),
       });
 
+      addDebugLog(`  → Response status: ${chatResponse.status}`);
       if (chatResponse.ok) {
         const chatData = await chatResponse.json();
+        addDebugLog(`  → Chat response: ${JSON.stringify(chatData, null, 2)}`);
         if (chatData.choices && chatData.choices[0]) {
+          addDebugLog('  ✅ Chat endpoint working correctly');
           updateTestResult(2, 'success', 'Chat endpoint working correctly');
         } else {
+          addDebugLog('  ❌ Invalid response from chat endpoint');
           updateTestResult(2, 'error', 'Invalid response from chat endpoint');
         }
       } else {
+        const errorText = await chatResponse.text();
+        addDebugLog(`  ❌ HTTP ${chatResponse.status}: ${chatResponse.statusText}`);
+        addDebugLog(`  → Error body: ${errorText}`);
         updateTestResult(2, 'error', `HTTP ${chatResponse.status}: ${chatResponse.statusText}`);
       }
     } catch (error) {
-      updateTestResult(2, 'error', `Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      addDebugLog(`  ❌ Error: ${errorMsg}`);
+      updateTestResult(2, 'error', `Error: ${errorMsg}`);
     }
 
     // Test 4: Error Handling
+    addDebugLog('⚠️  Test 4: Testing Error Handling...');
     updateTestResult(3, 'running');
     await new Promise(resolve => setTimeout(resolve, 500));
     try {
+      addDebugLog('  → Sending invalid request (empty messages)...');
       const errorResponse = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ messages: [] }), // Invalid request
       });
 
+      addDebugLog(`  → Response status: ${errorResponse.status}`);
       if (errorResponse.status === 400) {
+        addDebugLog('  ✅ Error handling works correctly (400 Bad Request)');
         updateTestResult(3, 'success', 'Error handling works correctly (400 Bad Request)');
       } else {
+        addDebugLog('  ❌ Error handling not working as expected');
         updateTestResult(3, 'error', 'Error handling not working as expected');
       }
     } catch (error) {
+      addDebugLog('  ✅ Error handling caught the invalid request');
       updateTestResult(3, 'success', 'Error handling caught the invalid request');
     }
 
+    addDebugLog('🎉 Test suite completed!');
+    addDebugLog('💡 Check browser console (F12) for detailed server-side authentication logs');
     setRunning(false);
   };
 
@@ -203,6 +251,48 @@ export default function TestPage() {
           ))}
         </div>
       </div>
+
+      {/* Debug Logs Section */}
+      {debugLogs.length > 0 && (
+        <div className="card">
+          <h3 style={{ marginBottom: '15px', color: '#667eea' }}>🔍 Authentication Debug Logs</h3>
+          <p style={{ marginBottom: '15px', fontSize: '0.9rem', color: '#666' }}>
+            Detailed logging of authentication and API requests. Check browser console for additional server-side logs.
+          </p>
+          <div 
+            style={{ 
+              background: '#1a1a1a', 
+              padding: '15px', 
+              borderRadius: '8px',
+              maxHeight: '400px',
+              overflowY: 'auto',
+              fontFamily: 'monospace',
+              fontSize: '0.85rem',
+              color: '#00ff00'
+            }}
+          >
+            {debugLogs.map((log, index) => (
+              <div key={index} style={{ marginBottom: '5px', whiteSpace: 'pre-wrap' }}>
+                {log}
+              </div>
+            ))}
+          </div>
+          <button
+            onClick={() => setDebugLogs([])}
+            style={{
+              marginTop: '10px',
+              padding: '8px 16px',
+              background: '#667eea',
+              color: 'white',
+              border: 'none',
+              borderRadius: '5px',
+              cursor: 'pointer'
+            }}
+          >
+            Clear Logs
+          </button>
+        </div>
+      )}
 
       <div className="card">
         <h3 style={{ marginBottom: '15px', color: '#667eea' }}>📋 Feature Checklist</h3>
