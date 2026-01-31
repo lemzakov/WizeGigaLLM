@@ -24,6 +24,12 @@ export default function Header() {
             🏠 Home
           </Link>
           <Link 
+            href="/test" 
+            className={pathname === '/test' ? 'active' : ''}
+          >
+            🧪 Test
+          </Link>
+          <Link 
             href="/chat" 
             className={pathname === '/chat' ? 'active' : ''}
           >

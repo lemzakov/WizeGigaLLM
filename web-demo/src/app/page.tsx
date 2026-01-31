@@ -29,6 +29,13 @@ export default function HomePage() {
         <h3 style={{ marginBottom: '15px', color: '#667eea' }}>🚀 Getting Started</h3>
         <ol style={{ marginBottom: '25px', lineHeight: '1.8', marginLeft: '20px' }}>
           <li>
+            <strong>Run Tests:</strong> Visit the{' '}
+            <Link href="/test" style={{ color: '#667eea', textDecoration: 'underline' }}>
+              Test Suite
+            </Link>{' '}
+            page to verify all features are working correctly
+          </li>
+          <li>
             <strong>Configure API Credentials:</strong> Visit the{' '}
             <Link href="/settings" style={{ color: '#667eea', textDecoration: 'underline' }}>
               Settings
@@ -78,6 +85,9 @@ export default function HomePage() {
       <div className="card" style={{ textAlign: 'center' }}>
         <h3 style={{ marginBottom: '20px' }}>Ready to explore?</h3>
         <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', flexWrap: 'wrap' }}>
+          <Link href="/test" className="btn btn-primary">
+            🧪 Run Tests
+          </Link>
           <Link href="/chat" className="btn btn-primary">
             💬 Try Chat Demo
           </Link>
