@@ -1,0 +1,17 @@
+# Ignore everything except web-demo
+/*
+!/web-demo
+
+# But ignore these within web-demo
+web-demo/node_modules
+web-demo/.next
+web-demo/.env.local
+web-demo/npm-debug.log*
+web-demo/yarn-debug.log*
+web-demo/yarn-error.log*
+
+# Ignore documentation and other directories
+cookbook
+docs
+hub
+static

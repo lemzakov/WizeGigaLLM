@@ -61,10 +61,12 @@ git push origin main
 2. Click "Add New..." → "Project"
 3. Import your GitHub repository
 4. Configure project settings:
-   - **Framework Preset**: Next.js
-   - **Root Directory**: `web-demo`
-   - **Build Command**: `npm run build`
-   - **Output Directory**: `.next`
+   - **Framework Preset**: Next.js (auto-detected)
+   - **Root Directory**: Leave as default (configured in `vercel.json`)
+   - **Build Command**: Leave as default (configured in `vercel.json`)
+   - **Output Directory**: Leave as default (configured in `vercel.json`)
+
+**Note**: The repository includes a `vercel.json` configuration file at the root that automatically configures the build to use the `web-demo` subdirectory. Vercel will detect and use these settings automatically.
 
 #### Step 3: Configure Environment Variables
 

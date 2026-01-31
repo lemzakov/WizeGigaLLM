@@ -1,0 +1,9 @@
+{
+  "buildCommand": "cd web-demo && npm install && npm run build",
+  "devCommand": "cd web-demo && npm run dev",
+  "installCommand": "cd web-demo && npm install",
+  "framework": "nextjs",
+  "outputDirectory": "web-demo/.next",
+  "cleanUrls": true,
+  "trailingSlash": false
+}
