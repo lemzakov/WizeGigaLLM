@@ -3,7 +3,8 @@
  */
 
 export interface GigaChatConfig {
-  credentials: string;
+  clientId: string;
+  clientSecret: string;
   baseUrl: string;
   verifySSL: boolean;
   model?: string;

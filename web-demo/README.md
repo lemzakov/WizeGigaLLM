@@ -1,12 +1,13 @@
 # WizeGigaLLM Web Demo
 
-A modern, interactive web-based demonstration application for WizeGigaLLM with GigaChat API integration. Built with Next.js 14, TypeScript, and optimized for Vercel deployment.
+A modern, interactive web-based demonstration application for WizeGigaLLM with GigaChat API integration using **LangChain**. Built with Next.js 15, TypeScript, and optimized for Vercel deployment.
 
 ![WizeGigaLLM Demo](../static/img/logo-with-backgroung.png)
 
 ## 🌟 Features
 
-- **Interactive Chat Interface** - Real-time chat with GigaChat API
+- **Interactive Chat Interface** - Real-time chat with GigaChat API via LangChain
+- **LangChain Integration** - Uses `langchain-gigachat` package for robust model interaction
 - **Settings Management** - View and test API configuration
 - **Connection Testing** - Verify API credentials and connectivity
 - **Modern UI/UX** - Clean, responsive design with gradient backgrounds
@@ -14,6 +15,7 @@ A modern, interactive web-based demonstration application for WizeGigaLLM with G
 - **Vercel Ready** - Optimized configuration for seamless deployment
 - **Security First** - Server-side API key management, never exposed to client
 - **Error Handling** - Comprehensive error handling and user feedback
+- **Test Suite** - Comprehensive test page at `/test` for validating deployment
 
 ## 📋 Prerequisites
 
@@ -34,6 +36,8 @@ cd web-demo
 npm install
 ```
 
+This will install Next.js, React, and the `langchain-gigachat` package along with other dependencies.
+
 ### 2. Configuration
 
 Create a `.env.local` file by copying the example:
@@ -45,12 +49,19 @@ cp .env.example .env.local
 Edit `.env.local` and add your GigaChat API credentials:
 
 ```env
-GIGACHAT_CREDENTIALS=your_base64_encoded_credentials_here
+GIGACHAT_CLIENT_ID=your_client_id_here
+GIGACHAT_CLIENT_SECRET=your_client_secret_here
+GIGACHAT_MODEL=GigaChat
 GIGACHAT_BASE_URL=https://gigachat.devices.sberbank.ru/api/v1
 GIGACHAT_VERIFY_SSL_CERTS=false
 ```
 
-**Important:** Never commit `.env.local` to version control. It's already included in `.gitignore`.
+**Important Notes:**
+- **LangChain Integration**: The app uses `langchain-gigachat` package which handles authentication internally
+- Credentials are automatically encoded to Base64 by the LangChain package
+- `GIGACHAT_MODEL` can be: `GigaChat`, `GigaChat-Max`, or `GigaChat-Pro`
+- `GIGACHAT_VERIFY_SSL_CERTS=false` is required to bypass SSL certificate verification
+- Never commit `.env.local` to version control (it's already in `.gitignore`)
 
 ### 3. Run Development Server
 
@@ -69,16 +80,18 @@ web-demo/
 ├── src/
 │   ├── app/                    # Next.js App Router pages
 │   │   ├── api/               # API routes
-│   │   │   ├── chat/          # Chat completions endpoint
+│   │   │   ├── chat/          # Chat completions endpoint (uses LangChain)
 │   │   │   └── config/        # Configuration management endpoint
 │   │   ├── chat/              # Chat demo page
 │   │   ├── settings/          # Settings page
+│   │   ├── test/              # Test suite page
 │   │   ├── layout.tsx         # Root layout
 │   │   └── page.tsx           # Home page
 │   ├── components/            # React components
 │   │   └── Header.tsx         # Navigation header
 │   ├── lib/                   # Utility libraries
-│   │   └── gigaapi.ts         # GigaAPI client
+│   │   ├── langchain-gigachat.ts  # LangChain GigaChat integration
+│   │   └── gigaapi.ts         # Legacy GigaAPI client (deprecated)
 │   ├── styles/                # Global styles
 │   │   └── globals.css        # Global CSS
 │   └── types/                 # TypeScript type definitions
@@ -102,6 +115,28 @@ The landing page provides:
 - Feature highlights
 - Quick start guide
 - Links to documentation
+
+### Test Suite (`/test`)
+
+**NEW:** Comprehensive testing interface for deployment validation.
+
+The test page provides:
+- **Automated Tests**: One-click testing of API configuration, connection, chat endpoint, and error handling
+- **Feature Checklist**: Quick access to test all features individually
+- **Manual Testing Guide**: Step-by-step instructions for thorough testing
+- **Deployment Verification**: Checklist to ensure successful deployment
+
+**How to use:**
+1. Navigate to `http://localhost:3000/test` (or `https://your-deployment.vercel.app/test` in production)
+2. Click "🚀 Run All Tests" to execute automated tests
+3. Review test results for each feature
+4. Use the feature checklist to test individual components
+5. Follow manual testing instructions for comprehensive validation
+
+**Important for Deployment:**
+- Verify the test page is accessible at `/test` after deploying to Vercel
+- All automated tests should pass if environment variables are configured correctly
+- See [DEPLOYMENT_VALIDATION.md](./DEPLOYMENT_VALIDATION.md) for detailed deployment verification steps
 
 ### Chat Demo (`/chat`)
 
@@ -168,7 +203,8 @@ This application is optimized for Vercel deployment.
    - Go to your project settings
    - Navigate to "Environment Variables"
    - Add the following variables:
-     - `GIGACHAT_CREDENTIALS`
+     - `GIGACHAT_CLIENT_ID`
+     - `GIGACHAT_CLIENT_SECRET`
      - `GIGACHAT_BASE_URL`
      - `GIGACHAT_VERIFY_SSL_CERTS`
 
@@ -259,10 +295,32 @@ body {
 **Problem**: "Failed to authenticate with GigaChat API"
 
 **Solutions**:
-1. Verify your `GIGACHAT_CREDENTIALS` is correctly set
-2. Check if credentials are Base64 encoded
+1. Verify your `GIGACHAT_CLIENT_ID` and `GIGACHAT_CLIENT_SECRET` are correctly set
+2. Ensure you have the correct Client ID (UUID format) and Client Secret
 3. Ensure you have network access to GigaChat API endpoints
 4. Try setting `GIGACHAT_VERIFY_SSL_CERTS=false` for development
+
+**Problem**: "fetch failed" errors on Vercel/production
+
+**Symptoms**:
+- Error: `Failed to authenticate with GigaChat API: fetch failed`
+- Network connectivity errors in logs
+- API calls timeout or fail
+
+**Solutions**:
+1. **SSL Certificate Issues**:
+   - Set `GIGACHAT_VERIFY_SSL_CERTS=false` in Vercel environment variables
+   - Redeploy after changing environment variables
+
+2. **Network/Firewall Issues**:
+   - Verify GigaChat API is accessible from your deployment region
+   - Check if there are network restrictions between Vercel and GigaChat
+   - Consider alternative deployment platforms (AWS, VPS) if connectivity persists
+
+3. **Debug**:
+   - Check Vercel function logs for detailed error diagnostics
+   - Look for `[GigaAPI Auth Debug]` messages with suggested solutions
+   - Test locally first: `npm run dev` to verify credentials work
 
 ### Build Errors
 

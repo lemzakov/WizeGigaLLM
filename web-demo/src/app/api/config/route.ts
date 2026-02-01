@@ -1,16 +1,25 @@
 /**
  * API Route: /api/config
- * Handles configuration management for GigaChat API
+ * Handles configuration management for GigaChat API using LangChain
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getGigaAPIClient } from '@/lib/gigaapi';
+import { testConnection } from '@/lib/langchain-gigachat';
 
 // GET: Retrieve current configuration (without sensitive data)
 export async function GET() {
   try {
-    const client = getGigaAPIClient();
-    const config = client.getConfig();
+    const model = process.env.GIGACHAT_MODEL || 'GigaChat';
+    const baseUrl = process.env.GIGACHAT_BASE_URL || 'https://gigachat.devices.sberbank.ru/api/v1';
+    const verifySSL = process.env.GIGACHAT_VERIFY_SSL_CERTS !== 'false';
+
+    const config = {
+      model,
+      baseUrl,
+      verifySSL,
+      temperature: 0.7,
+      maxTokens: 1024,
+    };
 
     return NextResponse.json({
       success: true,
@@ -32,8 +41,7 @@ export async function GET() {
 // POST: Test connection to GigaChat API
 export async function POST(request: NextRequest) {
   try {
-    const client = getGigaAPIClient();
-    const isConnected = await client.testConnection();
+    const isConnected = await testConnection();
 
     return NextResponse.json({
       success: true,
