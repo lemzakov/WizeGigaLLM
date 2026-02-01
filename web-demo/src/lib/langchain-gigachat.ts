@@ -120,7 +120,9 @@ export async function sendChatRequest(request: ChatRequest): Promise<ChatRespons
       model: request.model || 'GigaChat',
       created: Math.floor(Date.now() / 1000),
       usage: {
-        prompt_tokens: 0, // LangChain doesn't provide this by default
+        // Note: LangChain GigaChat doesn't expose token usage in the response
+        // These are placeholder values - actual usage tracking not currently available
+        prompt_tokens: 0,
         completion_tokens: 0,
         total_tokens: 0
       }
