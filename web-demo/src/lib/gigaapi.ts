@@ -55,8 +55,8 @@ class GigaAPIClient {
       return this.accessToken;
     }
 
-    // Get new token
-    const authUrl = `${this.config.baseUrl.replace('/v1', '')}/api/v2/oauth`;
+    // Get new token - use ngw.devices.sberbank.ru endpoint for authentication
+    const authUrl = 'https://ngw.devices.sberbank.ru:9443/api/v2/oauth';
     console.log('[GigaAPI Auth Debug] Auth URL:', authUrl);
     
     const encodedCredentials = this.encodeCredentials(this.config.clientId, this.config.clientSecret);
@@ -67,6 +67,7 @@ class GigaAPIClient {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
+        'Accept': 'application/json',
         'Authorization': 'Basic [REDACTED]',
         'RqUID': rqUID
       },
@@ -82,6 +83,7 @@ class GigaAPIClient {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
+          'Accept': 'application/json',
           'Authorization': `Basic ${encodedCredentials}`,
           'RqUID': rqUID,
         },
@@ -90,10 +92,18 @@ class GigaAPIClient {
       
       // In Node.js environment, handle SSL verification
       if (typeof process !== 'undefined' && !this.config.verifySSL) {
-        // Note: In serverless environments like Vercel, we may need to handle SSL differently
-        console.log('[GigaAPI Auth Debug] SSL verification disabled');
-        // For fetch API in Node 18+, we need to use a custom agent
-        // However, in serverless environments this may not work as expected
+        console.log('[GigaAPI Auth Debug] SSL verification disabled - configuring Agent');
+        // For Node.js fetch API, we need to use a custom agent to ignore SSL
+        try {
+          const https = await import('https');
+          const agent = new https.Agent({
+            rejectUnauthorized: false
+          });
+          (fetchOptions as any).agent = agent;
+          console.log('[GigaAPI Auth Debug] HTTPS Agent configured with rejectUnauthorized: false');
+        } catch (error) {
+          console.warn('[GigaAPI Auth Debug] Could not import https module:', error);
+        }
       }
       
       console.log('[GigaAPI Auth Debug] Attempting fetch request...');

@@ -51,7 +51,10 @@ GIGACHAT_BASE_URL=https://gigachat.devices.sberbank.ru/api/v1
 GIGACHAT_VERIFY_SSL_CERTS=false
 ```
 
-**Important:** Never commit `.env.local` to version control. It's already included in `.gitignore`.
+**Important Notes:**
+- The authentication endpoint `https://ngw.devices.sberbank.ru:9443/api/v2/oauth` is hardcoded in the API client
+- `GIGACHAT_VERIFY_SSL_CERTS=false` is required to bypass SSL certificate verification
+- Never commit `.env.local` to version control (it's already in `.gitignore`)
 
 ### 3. Run Development Server
 

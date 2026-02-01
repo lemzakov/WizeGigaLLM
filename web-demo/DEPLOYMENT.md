@@ -72,12 +72,16 @@ git push origin main
 
 In the project settings, add these environment variables:
 
-| Variable Name | Value |
-|--------------|-------|
-| `GIGACHAT_CLIENT_ID` | Your GigaChat Client ID (UUID format) |
-| `GIGACHAT_CLIENT_SECRET` | Your GigaChat Client Secret (Authorization Key) |
-| `GIGACHAT_BASE_URL` | `https://gigachat.devices.sberbank.ru/api/v1` |
-| `GIGACHAT_VERIFY_SSL_CERTS` | `false` (or `true` for production) |
+| Variable Name | Value | Description |
+|--------------|-------|-------------|
+| `GIGACHAT_CLIENT_ID` | Your GigaChat Client ID (UUID format) | Unique identifier for your GigaChat application |
+| `GIGACHAT_CLIENT_SECRET` | Your GigaChat Client Secret (Authorization Key) | Secret key for authentication |
+| `GIGACHAT_BASE_URL` | `https://gigachat.devices.sberbank.ru/api/v1` | Base URL for GigaChat API (chat completions) |
+| `GIGACHAT_VERIFY_SSL_CERTS` | `false` | **REQUIRED**: Must be `false` to bypass SSL verification |
+
+**Important**: 
+- The authentication endpoint `https://ngw.devices.sberbank.ru:9443/api/v2/oauth` is hardcoded and uses the credentials above
+- SSL verification **must** be disabled (`false`) for the GigaChat API to work in serverless environments
 
 #### Step 4: Deploy
 
