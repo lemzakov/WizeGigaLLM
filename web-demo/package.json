@@ -12,10 +12,12 @@
     "deploy": "vercel --prod"
   },
   "dependencies": {
+    "@langchain/core": "^0.3.80",
+    "axios": "^1.7.2",
+    "langchain-gigachat": "^0.0.14",
     "next": "^15.5.11",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "axios": "^1.7.2"
+    "react-dom": "^18.3.1"
   },
   "devDependencies": {
     "@types/node": "^20.14.2",

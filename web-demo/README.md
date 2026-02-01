@@ -1,12 +1,13 @@
 # WizeGigaLLM Web Demo
 
-A modern, interactive web-based demonstration application for WizeGigaLLM with GigaChat API integration. Built with Next.js 14, TypeScript, and optimized for Vercel deployment.
+A modern, interactive web-based demonstration application for WizeGigaLLM with GigaChat API integration using **LangChain**. Built with Next.js 15, TypeScript, and optimized for Vercel deployment.
 
 ![WizeGigaLLM Demo](../static/img/logo-with-backgroung.png)
 
 ## 🌟 Features
 
-- **Interactive Chat Interface** - Real-time chat with GigaChat API
+- **Interactive Chat Interface** - Real-time chat with GigaChat API via LangChain
+- **LangChain Integration** - Uses `langchain-gigachat` package for robust model interaction
 - **Settings Management** - View and test API configuration
 - **Connection Testing** - Verify API credentials and connectivity
 - **Modern UI/UX** - Clean, responsive design with gradient backgrounds
@@ -14,6 +15,7 @@ A modern, interactive web-based demonstration application for WizeGigaLLM with G
 - **Vercel Ready** - Optimized configuration for seamless deployment
 - **Security First** - Server-side API key management, never exposed to client
 - **Error Handling** - Comprehensive error handling and user feedback
+- **Test Suite** - Comprehensive test page at `/test` for validating deployment
 
 ## 📋 Prerequisites
 
@@ -34,6 +36,8 @@ cd web-demo
 npm install
 ```
 
+This will install Next.js, React, and the `langchain-gigachat` package along with other dependencies.
+
 ### 2. Configuration
 
 Create a `.env.local` file by copying the example:
@@ -47,12 +51,15 @@ Edit `.env.local` and add your GigaChat API credentials:
 ```env
 GIGACHAT_CLIENT_ID=your_client_id_here
 GIGACHAT_CLIENT_SECRET=your_client_secret_here
+GIGACHAT_MODEL=GigaChat
 GIGACHAT_BASE_URL=https://gigachat.devices.sberbank.ru/api/v1
 GIGACHAT_VERIFY_SSL_CERTS=false
 ```
 
 **Important Notes:**
-- The authentication endpoint `https://ngw.devices.sberbank.ru:9443/api/v2/oauth` is hardcoded in the API client
+- **LangChain Integration**: The app uses `langchain-gigachat` package which handles authentication internally
+- Credentials are automatically encoded to Base64 by the LangChain package
+- `GIGACHAT_MODEL` can be: `GigaChat`, `GigaChat-Max`, or `GigaChat-Pro`
 - `GIGACHAT_VERIFY_SSL_CERTS=false` is required to bypass SSL certificate verification
 - Never commit `.env.local` to version control (it's already in `.gitignore`)
 
@@ -73,16 +80,18 @@ web-demo/
 ├── src/
 │   ├── app/                    # Next.js App Router pages
 │   │   ├── api/               # API routes
-│   │   │   ├── chat/          # Chat completions endpoint
+│   │   │   ├── chat/          # Chat completions endpoint (uses LangChain)
 │   │   │   └── config/        # Configuration management endpoint
 │   │   ├── chat/              # Chat demo page
 │   │   ├── settings/          # Settings page
+│   │   ├── test/              # Test suite page
 │   │   ├── layout.tsx         # Root layout
 │   │   └── page.tsx           # Home page
 │   ├── components/            # React components
 │   │   └── Header.tsx         # Navigation header
 │   ├── lib/                   # Utility libraries
-│   │   └── gigaapi.ts         # GigaAPI client
+│   │   ├── langchain-gigachat.ts  # LangChain GigaChat integration
+│   │   └── gigaapi.ts         # Legacy GigaAPI client (deprecated)
 │   ├── styles/                # Global styles
 │   │   └── globals.css        # Global CSS
 │   └── types/                 # TypeScript type definitions
