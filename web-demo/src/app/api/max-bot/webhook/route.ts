@@ -143,7 +143,7 @@ export async function DELETE() {
   // ── helper: safe fetch-then-parse ────────────────────────────────────────
   async function doDelete(url: string): Promise<{ ok: boolean; status: number; data: unknown }> {
     const ctrl = new AbortController();
-    const t = setTimeout(() => ctrl.abort(), 25_000);
+    const timeoutId = setTimeout(() => ctrl.abort(), 25_000);
     try {
       const res = await fetch(url, {
         method: 'DELETE',
@@ -158,7 +158,7 @@ export async function DELETE() {
       }
       return { ok: res.ok, status: res.status, data };
     } finally {
-      clearTimeout(t);
+      clearTimeout(timeoutId);
     }
   }
 

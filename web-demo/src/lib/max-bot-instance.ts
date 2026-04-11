@@ -162,9 +162,10 @@ export function getBot(): Bot | null {
   });
 
   bot.on('bot_added', (ctx) => {
+    const mention = ctx.botInfo?.username ? `@${ctx.botInfo.username}` : 'меня';
     return ctx.reply(
       '👋 Привет! Я AI-ассистент на базе GigaChat.\n\n' +
-        'Чтобы задать мне вопрос в этой группе, просто упомяните меня (@имя_бота) ' +
+        `Чтобы задать мне вопрос в этой группе, просто упомяните меня (${mention}) ` +
         'в вашем сообщении.\n\n' +
         'Команды:\n' +
         '/help — справка\n' +
