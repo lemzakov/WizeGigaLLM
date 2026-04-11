@@ -16,12 +16,16 @@ export async function GET() {
     );
   }
 
+  const controller = new AbortController();
+  const fetchTimeout = setTimeout(() => controller.abort(), 25_000);
+
   try {
     const url = new URL(`${MAX_API_BASE}/chats`);
     url.searchParams.set('count', '100');
 
     const res = await fetch(url.toString(), {
       headers: { Authorization: token },
+      signal: controller.signal,
     });
 
     const data = await res.json();
@@ -35,12 +39,15 @@ export async function GET() {
 
     return NextResponse.json({ success: true, chats: data.chats ?? [], marker: data.marker });
   } catch (error) {
+    const isTimeout = error instanceof Error && error.name === 'AbortError';
     return NextResponse.json(
       {
-        error: 'Failed to fetch chats',
+        error: isTimeout ? 'Request timed out' : 'Failed to fetch chats',
         details: error instanceof Error ? error.message : 'Unknown error',
       },
-      { status: 500 },
+      { status: isTimeout ? 504 : 500 },
     );
+  } finally {
+    clearTimeout(fetchTimeout);
   }
 }

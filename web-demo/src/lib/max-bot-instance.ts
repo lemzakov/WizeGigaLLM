@@ -28,7 +28,16 @@ async function askGigaChat(
   const userMessage = new HumanMessage(userText);
   const messages = [new SystemMessage(systemPrompt), ...history, userMessage];
 
-  const response = await gigaChat.invoke(messages);
+  // Enforce a 25-second wall-clock timeout so that a GigaChat API delay
+  // (which can surface as an AxiosError: timeout of 30000ms exceeded from the
+  // Sber SDK used internally by langchain-gigachat) does not hang the webhook
+  // handler indefinitely.
+  const response = await Promise.race([
+    gigaChat.invoke(messages),
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('GigaChat request timed out after 25 s')), 25_000),
+    ),
+  ]);
   const replyText =
     typeof response.content === 'string'
       ? response.content

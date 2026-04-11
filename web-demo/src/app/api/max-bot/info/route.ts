@@ -16,9 +16,13 @@ export async function GET() {
     );
   }
 
+  const controller = new AbortController();
+  const fetchTimeout = setTimeout(() => controller.abort(), 25_000);
+
   try {
     const res = await fetch(`${MAX_API_BASE}/me`, {
       headers: { Authorization: token },
+      signal: controller.signal,
     });
 
     const data = await res.json();
@@ -32,12 +36,15 @@ export async function GET() {
 
     return NextResponse.json({ success: true, bot: data });
   } catch (error) {
+    const isTimeout = error instanceof Error && error.name === 'AbortError';
     return NextResponse.json(
       {
-        error: 'Failed to fetch bot info',
+        error: isTimeout ? 'Request timed out' : 'Failed to fetch bot info',
         details: error instanceof Error ? error.message : 'Unknown error',
       },
-      { status: 500 },
+      { status: isTimeout ? 504 : 500 },
     );
+  } finally {
+    clearTimeout(fetchTimeout);
   }
 }
