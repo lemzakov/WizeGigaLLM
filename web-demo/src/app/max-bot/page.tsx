@@ -224,6 +224,12 @@ function WebhookSection() {
   const [subscription, setSubscription] = useState<WebhookSubscription | null>(null);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
 
+  // Compute the webhook receiver URL for this deployment.
+  const suggestedWebhookUrl =
+    typeof window !== 'undefined'
+      ? `${window.location.origin}/api/max-bot/bot`
+      : '/api/max-bot/bot';
+
   const clearMessage = () => setMessage(null);
 
   const getWebhook = useCallback(async () => {
@@ -294,10 +300,26 @@ function WebhookSection() {
 
   return (
     <Card title="🔗 Webhook Management">
-      <p style={{ marginBottom: '16px', color: '#555' }}>
+      <p style={{ marginBottom: '8px', color: '#555' }}>
         Register, view, or remove the bot&apos;s webhook subscription on the MAX platform.
         A webhook allows MAX to push updates to your HTTPS endpoint instead of long-polling.
       </p>
+      <div style={{ marginBottom: '16px', padding: '12px', background: '#e8f4fd', borderRadius: '6px', border: '1px solid #bee3f8' }}>
+        <p style={{ fontWeight: 600, marginBottom: '4px', color: '#2c5282' }}>📌 Your webhook receiver URL:</p>
+        <code style={{ display: 'block', wordBreak: 'break-all', fontSize: '13px', color: '#1a365d' }}>
+          {suggestedWebhookUrl}
+        </code>
+        <p style={{ marginTop: '6px', fontSize: '12px', color: '#4a5568' }}>
+          Register this URL with MAX so the platform can push bot events to this deployment.
+        </p>
+        <button
+          className="btn btn-secondary"
+          style={{ marginTop: '8px', fontSize: '13px', padding: '4px 12px' }}
+          onClick={() => setWebhookUrl(suggestedWebhookUrl)}
+        >
+          📋 Use this URL
+        </button>
+      </div>
 
       {/* Current subscription */}
       <div style={{ marginBottom: '24px' }}>
