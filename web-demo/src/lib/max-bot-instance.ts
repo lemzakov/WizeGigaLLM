@@ -19,6 +19,52 @@ const conversationHistory = new Map<number, Array<HumanMessage | AIMessage>>();
 
 const MAX_HISTORY_MESSAGES_COUNT = 40;
 
+// ── Group-chat mention helpers ────────────────────────────────────────────────
+
+type MentionMarkup = { type: string; user_id?: number | null; user_link?: string | null; from: number; length: number };
+
+function isBotMentioned(
+  markup: MentionMarkup[] | null | undefined,
+  botId: number | undefined,
+  botUsername?: string | null,
+): boolean {
+  if (!markup) return false;
+  return markup.some((m) => {
+    if (m.type !== 'user_mention') return false;
+    if (botId !== undefined && m.user_id === botId) return true;
+    if (botUsername && m.user_link) {
+      return m.user_link.replace(/^@/, '').toLowerCase() === botUsername.toLowerCase();
+    }
+    return false;
+  });
+}
+
+function stripBotMentions(
+  text: string,
+  markup: MentionMarkup[] | null | undefined,
+  botId: number | undefined,
+  botUsername?: string | null,
+): string {
+  if (!markup) return text.trim();
+  const ranges = markup
+    .filter((m) => {
+      if (m.type !== 'user_mention') return false;
+      if (botId !== undefined && m.user_id === botId) return true;
+      if (botUsername && m.user_link) {
+        return m.user_link.replace(/^@/, '').toLowerCase() === botUsername.toLowerCase();
+      }
+      return false;
+    })
+    .map((m) => ({ from: m.from, to: m.from + m.length }))
+    .sort((a, b) => b.from - a.from);
+
+  let result = text;
+  for (const { from, to } of ranges) {
+    result = result.slice(0, from) + result.slice(to);
+  }
+  return result.trim();
+}
+
 async function askGigaChat(
   gigaChat: GigaChat,
   systemPrompt: string,
@@ -115,6 +161,17 @@ export function getBot(): Bot | null {
     return ctx.reply('🔄 История диалога очищена. Можем начать с чистого листа!');
   });
 
+  bot.on('bot_added', (ctx) => {
+    return ctx.reply(
+      '👋 Привет! Я AI-ассистент на базе GigaChat.\n\n' +
+        'Чтобы задать мне вопрос в этой группе, просто упомяните меня (@имя_бота) ' +
+        'в вашем сообщении.\n\n' +
+        'Команды:\n' +
+        '/help — справка\n' +
+        '/reset — сбросить историю диалога',
+    );
+  });
+
   bot.on('bot_started', (ctx) => {
     const chatId = ctx.chatId;
     if (chatId !== undefined) conversationHistory.delete(chatId);
@@ -128,12 +185,45 @@ export function getBot(): Bot | null {
   });
 
   bot.on('message_created', async (ctx) => {
-    const text = ctx.message?.body?.text;
+    const msg = ctx.message;
+    const text = msg?.body?.text;
     const chatId = ctx.chatId;
+    const chatType = msg?.recipient?.chat_type;
 
     if (!text || chatId === undefined) return;
     if (text.startsWith('/')) return;
 
+    // In group chats the bot should only respond when explicitly @mentioned.
+    if (chatType === 'chat') {
+      const markup = msg?.body?.markup as MentionMarkup[] | null | undefined;
+      if (!isBotMentioned(markup, ctx.myId, ctx.botInfo?.username)) return;
+      const strippedText = stripBotMentions(text, markup, ctx.myId, ctx.botInfo?.username);
+      if (!strippedText) return;
+
+      try {
+        await ctx.sendAction('typing_on');
+        const reply = await askGigaChat(gigaChat, systemPrompt, chatId, strippedText);
+        broadcast({
+          type: 'gigachat_response',
+          timestamp: Date.now(),
+          chatId,
+          data: { userText: strippedText, reply },
+        });
+        await ctx.reply(reply);
+      } catch (error) {
+        console.error('[MAX Bot Webhook] Error processing message:', error);
+        broadcast({
+          type: 'bot_error',
+          timestamp: Date.now(),
+          chatId,
+          data: { message: error instanceof Error ? error.message : String(error) },
+        });
+        await ctx.reply('⚠️ Произошла ошибка при обработке вашего запроса. Попробуйте ещё раз.');
+      }
+      return;
+    }
+
+    // Direct message — respond to everything
     try {
       await ctx.sendAction('typing_on');
       const reply = await askGigaChat(gigaChat, systemPrompt, chatId, text);
