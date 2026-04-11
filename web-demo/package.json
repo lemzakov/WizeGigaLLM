@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@langchain/core": "^0.3.80",
+    "@maxhub/max-bot-api": "^0.2.2",
     "axios": "^1.7.2",
     "langchain-gigachat": "^0.0.14",
     "next": "^15.5.11",

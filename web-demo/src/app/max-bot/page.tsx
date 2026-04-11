@@ -146,7 +146,12 @@ function ChatsSection() {
     try {
       const res = await fetch('/api/max-bot/chats');
       const data = await res.json();
-      setResult(data.success ? { success: true, data: data.chats } : { success: false, error: data.error });
+      if (data.success) {
+        setResult({ success: true, data: data.chats });
+      } else {
+        const msg = data.details ? `${data.error}: ${data.details}` : (data.error ?? 'Unknown error');
+        setResult({ success: false, error: msg });
+      }
     } catch (e) {
       setResult({ success: false, error: e instanceof Error ? e.message : 'Unknown error' });
     } finally {
@@ -221,8 +226,14 @@ function WebhookSection() {
   const [loadingPost, setLoadingPost] = useState(false);
   const [loadingDelete, setLoadingDelete] = useState(false);
   const [webhookUrl, setWebhookUrl] = useState('');
-  const [subscription, setSubscription] = useState<WebhookSubscription | null>(null);
+  const [subscriptions, setSubscriptions] = useState<WebhookSubscription[]>([]);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
+
+  // Compute the webhook receiver URL for this deployment.
+  const suggestedWebhookUrl =
+    typeof window !== 'undefined'
+      ? `${window.location.origin}/api/max-bot/bot`
+      : '/api/max-bot/bot';
 
   const clearMessage = () => setMessage(null);
 
@@ -233,9 +244,17 @@ function WebhookSection() {
       const res = await fetch('/api/max-bot/webhook');
       const data = await res.json();
       if (data.success) {
-        const sub = data.subscriptions;
-        setSubscription(Array.isArray(sub) ? sub[0] ?? null : sub ?? null);
-        setMessage({ ok: true, text: 'Subscription info loaded.' });
+        // subscriptions is always an array now
+        const list: WebhookSubscription[] = Array.isArray(data.subscriptions)
+          ? data.subscriptions
+          : [];
+        setSubscriptions(list);
+        setMessage({
+          ok: true,
+          text: list.length > 0
+            ? `Found ${list.length} subscription${list.length !== 1 ? 's' : ''}.`
+            : 'No webhook registered. The bot is using long-polling.',
+        });
       } else {
         setMessage({ ok: false, text: data.error ?? 'Failed to get webhook' });
       }
@@ -280,7 +299,7 @@ function WebhookSection() {
       const res = await fetch('/api/max-bot/webhook', { method: 'DELETE' });
       const data = await res.json();
       if (data.success) {
-        setSubscription(null);
+        setSubscriptions([]);
         setMessage({ ok: true, text: 'Webhook removed successfully.' });
       } else {
         setMessage({ ok: false, text: data.error ?? 'Failed to delete webhook' });
@@ -294,38 +313,56 @@ function WebhookSection() {
 
   return (
     <Card title="🔗 Webhook Management">
-      <p style={{ marginBottom: '16px', color: '#555' }}>
+      <p style={{ marginBottom: '8px', color: '#555' }}>
         Register, view, or remove the bot&apos;s webhook subscription on the MAX platform.
         A webhook allows MAX to push updates to your HTTPS endpoint instead of long-polling.
       </p>
+      <div style={{ marginBottom: '16px', padding: '12px', background: '#e8f4fd', borderRadius: '6px', border: '1px solid #bee3f8' }}>
+        <p style={{ fontWeight: 600, marginBottom: '4px', color: '#2c5282' }}>📌 Your webhook receiver URL:</p>
+        <code style={{ display: 'block', wordBreak: 'break-all', fontSize: '13px', color: '#1a365d' }}>
+          {suggestedWebhookUrl}
+        </code>
+        <p style={{ marginTop: '6px', fontSize: '12px', color: '#4a5568' }}>
+          Register this URL with MAX so the platform can push bot events to this deployment.
+        </p>
+        <button
+          className="btn btn-secondary"
+          style={{ marginTop: '8px', fontSize: '13px', padding: '4px 12px' }}
+          onClick={() => setWebhookUrl(suggestedWebhookUrl)}
+        >
+          📋 Use this URL
+        </button>
+      </div>
 
-      {/* Current subscription */}
+      {/* Current subscriptions */}
       <div style={{ marginBottom: '24px' }}>
         <button className="btn btn-secondary" onClick={getWebhook} disabled={loadingGet} style={{ marginRight: '10px' }}>
           {loadingGet ? <><div className="spinner" />Checking…</> : '🔎 Check Current Webhook'}
         </button>
 
-        {subscription && (
-          <div style={{ marginTop: '16px', padding: '12px', background: '#f8f9fa', borderRadius: '6px' }}>
-            <p style={{ fontWeight: 600, marginBottom: '8px' }}>Current webhook:</p>
-            <table style={tableStyle}>
-              <tbody>
-                {subscription.url && <tr><td style={tdLabel}>URL</td><td style={{ wordBreak: 'break-all' }}>{subscription.url}</td></tr>}
-                {subscription.version && <tr><td style={tdLabel}>Version</td><td>{subscription.version}</td></tr>}
-                {subscription.time && <tr><td style={tdLabel}>Registered at</td><td>{new Date(subscription.time * 1000).toLocaleString()}</td></tr>}
-                {subscription.update_types && (
-                  <tr>
-                    <td style={tdLabel}>Update types</td>
-                    <td>{subscription.update_types.join(', ')}</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+        {subscriptions.length > 0 && (
+          <div style={{ marginTop: '16px' }}>
+            <p style={{ fontWeight: 600, marginBottom: '8px' }}>
+              Active webhook{subscriptions.length !== 1 ? 's' : ''} ({subscriptions.length}):
+            </p>
+            {subscriptions.map((sub, idx) => (
+              <div key={idx} style={{ padding: '12px', background: '#f8f9fa', borderRadius: '6px', marginBottom: '8px' }}>
+                <table style={tableStyle}>
+                  <tbody>
+                    {sub.url && <tr><td style={tdLabel}>URL</td><td style={{ wordBreak: 'break-all' }}>{sub.url}</td></tr>}
+                    {sub.version && <tr><td style={tdLabel}>Version</td><td>{sub.version}</td></tr>}
+                    {sub.time && <tr><td style={tdLabel}>Registered at</td><td>{new Date(sub.time * 1000).toLocaleString()}</td></tr>}
+                    {sub.update_types && (
+                      <tr>
+                        <td style={tdLabel}>Update types</td>
+                        <td>{sub.update_types.join(', ')}</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            ))}
           </div>
-        )}
-
-        {subscription === null && !loadingGet && message?.ok && (
-          <p style={{ marginTop: '12px', color: '#666' }}>No webhook registered. The bot is using long-polling.</p>
         )}
       </div>
 
@@ -334,7 +371,7 @@ function WebhookSection() {
         <label>Webhook URL</label>
         <input
           type="url"
-          placeholder="https://your-server.example.com/bot/webhook"
+          placeholder="https://your-server.example.com/api/max-bot/bot"
           value={webhookUrl}
           onChange={(e) => setWebhookUrl(e.target.value)}
         />

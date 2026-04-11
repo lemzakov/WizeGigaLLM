@@ -20,9 +20,13 @@ export async function GET() {
   const token = process.env.MAX_BOT_TOKEN;
   if (!token) return tokenResponse();
 
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 25_000);
+
   try {
     const res = await fetch(`${MAX_API_BASE}/subscriptions`, {
       headers: { Authorization: token },
+      signal: controller.signal,
     });
 
     const data = await res.json();
@@ -34,15 +38,26 @@ export async function GET() {
       );
     }
 
-    return NextResponse.json({ success: true, subscriptions: data });
+    // The MAX API returns { subscriptions: [...] }; extract the array so the
+    // client always receives a flat list rather than a nested response object.
+    const subscriptions: unknown[] = Array.isArray(data?.subscriptions)
+      ? data.subscriptions
+      : Array.isArray(data)
+        ? data
+        : [];
+
+    return NextResponse.json({ success: true, subscriptions });
   } catch (error) {
+    const isTimeout = error instanceof Error && error.name === 'AbortError';
     return NextResponse.json(
       {
-        error: 'Failed to get webhook subscriptions',
+        error: isTimeout ? 'Request timed out' : 'Failed to get webhook subscriptions',
         details: error instanceof Error ? error.message : 'Unknown error',
       },
-      { status: 500 },
+      { status: isTimeout ? 504 : 500 },
     );
+  } finally {
+    clearTimeout(timeout);
   }
 }
 
@@ -68,14 +83,23 @@ export async function POST(request: NextRequest) {
       payload.version = body.version;
     }
 
-    const res = await fetch(`${MAX_API_BASE}/subscriptions`, {
-      method: 'POST',
-      headers: {
-        Authorization: token,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
-    });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 25_000);
+
+    let res: Response;
+    try {
+      res = await fetch(`${MAX_API_BASE}/subscriptions`, {
+        method: 'POST',
+        headers: {
+          Authorization: token,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timeout);
+    }
 
     const data = await res.json();
 
@@ -88,12 +112,13 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, result: data });
   } catch (error) {
+    const isTimeout = error instanceof Error && error.name === 'AbortError';
     return NextResponse.json(
       {
-        error: 'Failed to register webhook',
+        error: isTimeout ? 'Request timed out' : 'Failed to register webhook',
         details: error instanceof Error ? error.message : 'Unknown error',
       },
-      { status: 500 },
+      { status: isTimeout ? 504 : 500 },
     );
   }
 }
@@ -103,10 +128,14 @@ export async function DELETE() {
   const token = process.env.MAX_BOT_TOKEN;
   if (!token) return tokenResponse();
 
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 25_000);
+
   try {
     const res = await fetch(`${MAX_API_BASE}/subscriptions`, {
       method: 'DELETE',
       headers: { Authorization: token },
+      signal: controller.signal,
     });
 
     const data = await res.json();
@@ -120,12 +149,15 @@ export async function DELETE() {
 
     return NextResponse.json({ success: true, result: data });
   } catch (error) {
+    const isTimeout = error instanceof Error && error.name === 'AbortError';
     return NextResponse.json(
       {
-        error: 'Failed to delete webhook',
+        error: isTimeout ? 'Request timed out' : 'Failed to delete webhook',
         details: error instanceof Error ? error.message : 'Unknown error',
       },
-      { status: 500 },
+      { status: isTimeout ? 504 : 500 },
     );
+  } finally {
+    clearTimeout(timeout);
   }
 }

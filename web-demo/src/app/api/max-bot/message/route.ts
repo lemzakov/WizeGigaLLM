@@ -30,6 +30,9 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const controller = new AbortController();
+  const fetchTimeout = setTimeout(() => controller.abort(), 25_000);
+
   try {
     const url = new URL(`${MAX_API_BASE}/messages`);
     url.searchParams.set('chat_id', String(body.chat_id));
@@ -41,6 +44,7 @@ export async function POST(request: NextRequest) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ text: body.text }),
+      signal: controller.signal,
     });
 
     const data = await res.json();
@@ -54,12 +58,15 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, message: data });
   } catch (error) {
+    const isTimeout = error instanceof Error && error.name === 'AbortError';
     return NextResponse.json(
       {
-        error: 'Failed to send message',
+        error: isTimeout ? 'Request timed out' : 'Failed to send message',
         details: error instanceof Error ? error.message : 'Unknown error',
       },
-      { status: 500 },
+      { status: isTimeout ? 504 : 500 },
     );
+  } finally {
+    clearTimeout(fetchTimeout);
   }
 }
