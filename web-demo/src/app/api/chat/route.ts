@@ -1,10 +1,10 @@
 /**
  * API Route: /api/chat
- * Handles chat completions with GigaChat API
+ * Handles chat completions with GigaChat API using LangChain
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getGigaAPIClient } from '@/lib/gigaapi';
+import { sendChatRequest } from '@/lib/langchain-gigachat';
 import type { ChatRequest } from '@/types/gigachat';
 
 export async function POST(request: NextRequest) {
@@ -19,11 +19,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get GigaAPI client
-    const client = getGigaAPIClient();
-
-    // Send chat request
-    const response = await client.chat(body);
+    // Send chat request using LangChain GigaChat
+    const response = await sendChatRequest(body);
 
     return NextResponse.json(response);
   } catch (error) {

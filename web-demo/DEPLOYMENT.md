@@ -60,21 +60,28 @@ git push origin main
 1. Go to [vercel.com/dashboard](https://vercel.com/dashboard)
 2. Click "Add New..." → "Project"
 3. Import your GitHub repository
-4. Configure project settings:
-   - **Framework Preset**: Next.js
-   - **Root Directory**: `web-demo`
-   - **Build Command**: `npm run build`
-   - **Output Directory**: `.next`
+4. **IMPORTANT**: Configure project settings:
+   - **Framework Preset**: Next.js (should auto-detect)
+   - **Root Directory**: `web-demo` (REQUIRED - must be set manually)
+   - **Build Command**: `npm run build` (default is fine)
+   - **Output Directory**: `.next` (default is fine)
+
+**Critical**: You MUST set the Root Directory to `web-demo` because the Next.js application is in a subdirectory of the monorepo. Vercel needs to know where to find the `package.json` file.
 
 #### Step 3: Configure Environment Variables
 
 In the project settings, add these environment variables:
 
-| Variable Name | Value |
-|--------------|-------|
-| `GIGACHAT_CREDENTIALS` | Your Base64-encoded GigaChat credentials |
-| `GIGACHAT_BASE_URL` | `https://gigachat.devices.sberbank.ru/api/v1` |
-| `GIGACHAT_VERIFY_SSL_CERTS` | `false` (or `true` for production) |
+| Variable Name | Value | Description |
+|--------------|-------|-------------|
+| `GIGACHAT_CLIENT_ID` | Your GigaChat Client ID (UUID format) | Unique identifier for your GigaChat application |
+| `GIGACHAT_CLIENT_SECRET` | Your GigaChat Client Secret (Authorization Key) | Secret key for authentication |
+| `GIGACHAT_BASE_URL` | `https://gigachat.devices.sberbank.ru/api/v1` | Base URL for GigaChat API (chat completions) |
+| `GIGACHAT_VERIFY_SSL_CERTS` | `false` | **REQUIRED**: Must be `false` to bypass SSL verification |
+
+**Important**: 
+- The authentication endpoint `https://ngw.devices.sberbank.ru:9443/api/v2/oauth` is hardcoded and uses the credentials above
+- SSL verification **must** be disabled (`false`) for the GigaChat API to work in serverless environments
 
 #### Step 4: Deploy
 
@@ -116,7 +123,8 @@ After first deployment, add environment variables:
 
 ```bash
 # Set environment variables
-vercel env add GIGACHAT_CREDENTIALS
+vercel env add GIGACHAT_CLIENT_ID
+vercel env add GIGACHAT_CLIENT_SECRET
 vercel env add GIGACHAT_BASE_URL
 vercel env add GIGACHAT_VERIFY_SSL_CERTS
 
@@ -130,15 +138,16 @@ vercel --prod
 
 | Variable | Description | Example |
 |----------|-------------|---------|
-| `GIGACHAT_CREDENTIALS` | Base64-encoded authorization credentials | `your_base64_credentials` |
+| `GIGACHAT_CLIENT_ID` | Client ID (UUID format) | `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx` |
+| `GIGACHAT_CLIENT_SECRET` | Client Secret / Authorization Key | `your_auth_key_here` |
 | `GIGACHAT_BASE_URL` | GigaChat API base URL | `https://gigachat.devices.sberbank.ru/api/v1` |
 | `GIGACHAT_VERIFY_SSL_CERTS` | Whether to verify SSL certificates | `false` or `true` |
 
 ### How to Get GigaChat Credentials
 
-1. Visit [GigaChat Developer Portal](https://developers.sber.ru/docs/ru/gigachat/quickstart/ind-using-api)
+1. Visit [GigaChat Developer Portal](https://developers.sber.ru/docs/ru/gigachat/individuals-quickstart)
 2. Follow the registration process
-3. Generate API credentials
+3. Generate API credentials (you'll receive Client ID and Client Secret)
 4. Encode credentials in Base64 format
 
 ### Setting Environment Variables in Vercel
@@ -175,10 +184,39 @@ https://your-project-name.vercel.app
 
 ### 2. Test the Application
 
-1. **Visit Home Page**: Verify the landing page loads correctly
-2. **Check Settings**: Go to `/settings` and test the connection
-3. **Try Chat**: Navigate to `/chat` and send a test message
-4. **Test API Routes**: Ensure API endpoints are responding
+**IMPORTANT:** Always verify the test page is accessible after deployment.
+
+1. **Visit Test Page**: Navigate to `/test` and run automated tests
+   ```
+   https://your-project-name.vercel.app/test
+   ```
+   - Click "🚀 Run All Tests" button
+   - Verify all 4 tests pass (API Configuration, Connection, Chat Endpoint, Error Handling)
+   - Check that the page matches the expected layout (see screenshot in PR)
+
+2. **Visit Home Page**: Verify the landing page loads correctly
+   - Confirm "Run Tests" button navigates to `/test`
+
+3. **Check Settings**: Go to `/settings` and test the connection
+   - Click "Test Connection" button
+   - Verify successful connection message appears
+
+4. **Try Chat**: Navigate to `/chat` and send a test message
+   - Send a simple message like "Hello"
+   - Verify you receive a response from GigaChat
+
+5. **Test API Routes**: Ensure API endpoints are responding
+   - `/api/config` should return configuration
+   - `/api/chat` should handle chat requests
+
+**Validation Checklist:**
+- ✅ `/test` page loads and displays all sections
+- ✅ Automated tests can be executed
+- ✅ All navigation links work correctly
+- ✅ No 404 errors on any route
+- ✅ No console errors in browser (check F12 developer tools)
+
+For detailed deployment validation instructions, see [DEPLOYMENT_VALIDATION.md](./DEPLOYMENT_VALIDATION.md).
 
 ### 3. Configure Custom Domain (Optional)
 

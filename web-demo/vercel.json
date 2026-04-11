@@ -1,21 +1,3 @@
 {
-  "version": 2,
-  "buildCommand": "npm run build",
-  "devCommand": "npm run dev",
-  "installCommand": "npm install",
-  "framework": "nextjs",
-  "outputDirectory": ".next",
-  "env": {
-    "GIGACHAT_CREDENTIALS": "@gigachat_credentials",
-    "GIGACHAT_BASE_URL": "@gigachat_base_url",
-    "GIGACHAT_VERIFY_SSL_CERTS": "@gigachat_verify_ssl_certs"
-  },
-  "build": {
-    "env": {
-      "GIGACHAT_CREDENTIALS": "@gigachat_credentials",
-      "GIGACHAT_BASE_URL": "@gigachat_base_url",
-      "GIGACHAT_VERIFY_SSL_CERTS": "@gigachat_verify_ssl_certs"
-    }
-  },
-  "regions": ["iad1"]
+  "framework": "nextjs"
 }
