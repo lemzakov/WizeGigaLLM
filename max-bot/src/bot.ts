@@ -68,13 +68,13 @@ async function askGigaChat(chatId: number, userText: string): Promise<string> {
       ? response.content
       : JSON.stringify(response.content);
 
-  // Update history (keep last 20 exchanges to avoid token overflow)
+  // Update history (keep last 20 exchanges — 20 user + 20 assistant — to avoid token overflow)
   const updatedHistory = [...history, userMessage, new AIMessage(replyText)];
-  const maxHistoryMessages = 40; // 20 user + 20 assistant
+  const MAX_HISTORY_MESSAGES_COUNT = 40;
   conversationHistory.set(
     chatId,
-    updatedHistory.length > maxHistoryMessages
-      ? updatedHistory.slice(updatedHistory.length - maxHistoryMessages)
+    updatedHistory.length > MAX_HISTORY_MESSAGES_COUNT
+      ? updatedHistory.slice(updatedHistory.length - MAX_HISTORY_MESSAGES_COUNT)
       : updatedHistory,
   );
 
