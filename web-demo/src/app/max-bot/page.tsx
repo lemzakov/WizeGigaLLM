@@ -549,8 +549,8 @@ function LiveDebugSection() {
 
     es.onmessage = (e) => {
       try {
-        const event = JSON.parse(e.data as string) as WebhookEvent;
-        const debug: DebugEvent = { ...event, id: `${Date.now()}-${Math.random()}` };
+        const event = JSON.parse(e.data) as WebhookEvent;
+        const debug: DebugEvent = { ...event, id: crypto.randomUUID() };
         setEvents((prev) => [debug, ...prev].slice(0, 200));
       } catch { /* ignore malformed events */ }
     };

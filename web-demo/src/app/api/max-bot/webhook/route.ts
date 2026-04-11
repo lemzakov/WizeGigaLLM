@@ -136,7 +136,7 @@ export async function POST(request: NextRequest) {
  * This handles the cases where (a) the response body is empty/non-JSON and
  * (b) there are multiple subscriptions that need to be cleaned up.
  */
-export async function DELETE(request: NextRequest) {
+export async function DELETE() {
   const token = process.env.MAX_BOT_TOKEN;
   if (!token) return tokenResponse();
 
