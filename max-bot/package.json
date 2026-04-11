@@ -1,0 +1,26 @@
+{
+  "name": "wizegigallm-max-bot",
+  "version": "1.0.0",
+  "description": "MAX Messenger bot powered by GigaChat AI via WizeGigaLLM",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node --loader ts-node/esm src/bot.ts",
+    "dev": "node --watch --loader ts-node/esm src/bot.ts",
+    "build": "tsc",
+    "start:compiled": "node dist/bot.js"
+  },
+  "dependencies": {
+    "@langchain/core": "^0.3.80",
+    "@maxhub/max-bot-api": "^0.2.2",
+    "langchain-gigachat": "^0.0.14"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.5"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
