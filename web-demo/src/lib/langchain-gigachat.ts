@@ -12,27 +12,26 @@ import type { ChatRequest, ChatResponse } from '@/types/gigachat';
  * Get configured GigaChat client using langchain-gigachat
  */
 export function getLangChainGigaChatClient(): GigaChat {
-  const clientId = process.env.GIGACHAT_CLIENT_ID;
-  const clientSecret = process.env.GIGACHAT_CLIENT_SECRET;
+  // GIGACHAT_CLIENT_SECRET holds the Authorization Key from the Sber developer portal.
+  // This key is already a Base64-encoded string — pass it directly to GigaChat as
+  // `credentials`. Do NOT re-encode it; that would produce a double-encoded value the
+  // Sber OAuth endpoint cannot decode (error code 4: "Can't decode 'Authorization' header").
+  const credentials = process.env.GIGACHAT_CLIENT_SECRET;
   const model = process.env.GIGACHAT_MODEL || 'GigaChat';
   const verifySSL = process.env.GIGACHAT_VERIFY_SSL_CERTS !== 'false';
 
   console.log('[LangChain GigaChat Debug] Initializing client...', {
-    clientIdPresent: !!clientId,
-    clientSecretPresent: !!clientSecret,
+    credentialsPresent: !!credentials,
     model,
     verifySSL,
     timestamp: new Date().toISOString()
   });
 
-  if (!clientId || !clientSecret) {
-    throw new Error('GIGACHAT_CLIENT_ID and GIGACHAT_CLIENT_SECRET environment variables must be set');
+  if (!credentials) {
+    throw new Error('GIGACHAT_CLIENT_SECRET environment variable must be set');
   }
 
-  // Encode credentials to Base64 for authorization
-  const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
-
-  console.log('[LangChain GigaChat Debug] Credentials encoded:', {
+  console.log('[LangChain GigaChat Debug] Using credentials:', {
     credentialsLength: credentials.length,
     timestamp: new Date().toISOString()
   });
