@@ -18,10 +18,9 @@ if (!BOT_TOKEN) {
   process.exit(1);
 }
 
-const GIGACHAT_CLIENT_ID = process.env.GIGACHAT_CLIENT_ID;
-const GIGACHAT_CLIENT_SECRET = process.env.GIGACHAT_CLIENT_SECRET;
-if (!GIGACHAT_CLIENT_ID || !GIGACHAT_CLIENT_SECRET) {
-  console.error('[MAX Bot] GIGACHAT_CLIENT_ID and GIGACHAT_CLIENT_SECRET environment variables are required');
+const GIGACHAT_CREDENTIALS = process.env.GIGACHAT_CLIENT_SECRET;
+if (!GIGACHAT_CREDENTIALS) {
+  console.error('[MAX Bot] GIGACHAT_CLIENT_SECRET environment variable is required');
   process.exit(1);
 }
 
@@ -33,11 +32,14 @@ const SYSTEM_PROMPT =
 
 // ── GigaChat client ──────────────────────────────────────────────────────────
 
-const credentials = Buffer.from(`${GIGACHAT_CLIENT_ID}:${GIGACHAT_CLIENT_SECRET}`).toString('base64');
+// GIGACHAT_CLIENT_SECRET holds the Authorization Key from the Sber developer portal.
+// This key is already a Base64-encoded string — pass it directly to GigaChat as
+// `credentials`. Do NOT re-encode it; that would produce a double-encoded value the
+// Sber OAuth endpoint cannot decode (error code 4: "Can't decode 'Authorization' header").
 const httpsAgent = new Agent({ rejectUnauthorized: VERIFY_SSL });
 
 const gigaChat = new GigaChat({
-  credentials,
+  credentials: GIGACHAT_CREDENTIALS,
   model: GIGACHAT_MODEL,
   httpsAgent,
   temperature: 0.7,
