@@ -30,10 +30,16 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    // Process the update asynchronously — do not await so the 200 is returned
-    // to MAX immediately (MAX expects a quick acknowledgement).
+    // Process the update without awaiting so MAX gets a 200 acknowledgement immediately.
     // handleUpdate is typed as private but is a public arrow-function property at runtime.
-    void (bot as unknown as { handleUpdate: (u: unknown) => Promise<void> }).handleUpdate(update);
+    const updatePromise = (
+      bot as unknown as { handleUpdate: (u: unknown) => Promise<void> }
+    ).handleUpdate(update);
+
+    // Attach a rejection handler so unhandled-promise-rejection is never triggered.
+    updatePromise.catch((error: unknown) => {
+      console.error('[MAX Bot Webhook] Failed to process update:', error);
+    });
   } catch (error) {
     console.error('[MAX Bot Webhook] Failed to dispatch update:', error);
   }
