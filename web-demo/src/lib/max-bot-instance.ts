@@ -12,6 +12,7 @@ import { Bot } from '@maxhub/max-bot-api';
 import { GigaChat } from 'langchain-gigachat';
 import { HumanMessage, SystemMessage, AIMessage } from '@langchain/core/messages';
 import { Agent } from 'https';
+import { broadcast } from '@/lib/webhook-events';
 
 // Per-chat conversation history (in-memory)
 const conversationHistory = new Map<number, Array<HumanMessage | AIMessage>>();
@@ -136,9 +137,21 @@ export function getBot(): Bot | null {
     try {
       await ctx.sendAction('typing_on');
       const reply = await askGigaChat(gigaChat, systemPrompt, chatId, text);
+      broadcast({
+        type: 'gigachat_response',
+        timestamp: Date.now(),
+        chatId,
+        data: { userText: text, reply },
+      });
       await ctx.reply(reply);
     } catch (error) {
       console.error('[MAX Bot Webhook] Error processing message:', error);
+      broadcast({
+        type: 'bot_error',
+        timestamp: Date.now(),
+        chatId,
+        data: { message: error instanceof Error ? error.message : String(error) },
+      });
       await ctx.reply('⚠️ Произошла ошибка при обработке вашего запроса. Попробуйте ещё раз.');
     }
   });
