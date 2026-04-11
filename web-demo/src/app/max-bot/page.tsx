@@ -198,7 +198,7 @@ function ChatsSection() {
                         <td style={{ ...tdStyle, textAlign: 'center' }}>{chat.participants_count ?? '—'}</td>
                         <td style={tdStyle}>
                           {chat.last_event_time
-                            ? new Date(chat.last_event_time).toLocaleString()
+                            ? new Date(chat.last_event_time * 1000).toLocaleString()
                             : '—'}
                         </td>
                       </tr>
@@ -312,7 +312,7 @@ function WebhookSection() {
               <tbody>
                 {subscription.url && <tr><td style={tdLabel}>URL</td><td style={{ wordBreak: 'break-all' }}>{subscription.url}</td></tr>}
                 {subscription.version && <tr><td style={tdLabel}>Version</td><td>{subscription.version}</td></tr>}
-                {subscription.time && <tr><td style={tdLabel}>Registered at</td><td>{new Date(subscription.time).toLocaleString()}</td></tr>}
+                {subscription.time && <tr><td style={tdLabel}>Registered at</td><td>{new Date(subscription.time * 1000).toLocaleString()}</td></tr>}
                 {subscription.update_types && (
                   <tr>
                     <td style={tdLabel}>Update types</td>
@@ -364,7 +364,7 @@ function WebhookSection() {
 
 function SendMessageSection() {
   const [chatId, setChatId] = useState('');
-  const [text, setText] = useState('Hello from WizeGigaLLM test UI! 👋');
+  const [text, setText] = useState('Hello from MAX Bot test UI! 👋');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null);
 
