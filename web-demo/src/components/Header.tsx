@@ -41,6 +41,12 @@ export default function Header() {
           >
             ⚙️ Settings
           </Link>
+          <Link 
+            href="/max-bot" 
+            className={pathname === '/max-bot' ? 'active' : ''}
+          >
+            🤖 MAX Bot
+          </Link>
         </nav>
       </div>
     </header>
