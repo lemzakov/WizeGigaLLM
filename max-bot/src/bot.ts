@@ -49,6 +49,60 @@ const gigaChat = new GigaChat({
 // Per-chat conversation history (in-memory, keyed by chat_id)
 const conversationHistory = new Map<number, Array<HumanMessage | AIMessage>>();
 
+// ── Group-chat mention helpers ────────────────────────────────────────────────
+
+type MentionMarkup = { type: string; user_id?: number | null; user_link?: string | null; from: number; length: number };
+
+/**
+ * Returns true if any markup element is a @mention of the bot.
+ * Matches by user_id (preferred) or by username link (fallback).
+ */
+function isBotMentioned(
+  markup: MentionMarkup[] | null | undefined,
+  botId: number | undefined,
+  botUsername?: string | null,
+): boolean {
+  if (!markup) return false;
+  return markup.some((m) => {
+    if (m.type !== 'user_mention') return false;
+    if (botId !== undefined && m.user_id === botId) return true;
+    if (botUsername && m.user_link) {
+      return m.user_link.replace(/^@/, '').toLowerCase() === botUsername.toLowerCase();
+    }
+    return false;
+  });
+}
+
+/**
+ * Removes all @botname mention tokens from the message text using the
+ * character positions from the markup, then trims whitespace.
+ */
+function stripBotMentions(
+  text: string,
+  markup: MentionMarkup[] | null | undefined,
+  botId: number | undefined,
+  botUsername?: string | null,
+): string {
+  if (!markup) return text.trim();
+  const ranges = markup
+    .filter((m) => {
+      if (m.type !== 'user_mention') return false;
+      if (botId !== undefined && m.user_id === botId) return true;
+      if (botUsername && m.user_link) {
+        return m.user_link.replace(/^@/, '').toLowerCase() === botUsername.toLowerCase();
+      }
+      return false;
+    })
+    .map((m) => ({ from: m.from, to: m.from + m.length }))
+    .sort((a, b) => b.from - a.from); // right-to-left so earlier indices stay valid
+
+  let result = text;
+  for (const { from, to } of ranges) {
+    result = result.slice(0, from) + result.slice(to);
+  }
+  return result.trim();
+}
+
 /**
  * Send a message to GigaChat and return the AI reply.
  * Maintains per-chat conversation history for multi-turn dialogue.
@@ -133,8 +187,10 @@ bot.command('reset', (ctx) => {
 
 // Handle all other text messages
 bot.on('message_created', async (ctx) => {
-  const text = ctx.message?.body?.text;
+  const msg = ctx.message;
+  const text = msg?.body?.text;
   const chatId = ctx.chatId;
+  const chatType = msg?.recipient?.chat_type;
 
   if (!text || chatId === undefined) {
     return;
@@ -145,10 +201,32 @@ bot.on('message_created', async (ctx) => {
     return;
   }
 
-  try {
-    // Show "typing…" indicator while processing
-    await ctx.sendAction('typing_on');
+  // In group chats the bot should only respond when explicitly @mentioned.
+  if (chatType === 'chat') {
+    const markup = msg?.body?.markup as MentionMarkup[] | null | undefined;
+    if (!isBotMentioned(markup, ctx.myId, ctx.botInfo?.username)) {
+      return;
+    }
+    // Strip the @mention token(s) so GigaChat only sees the actual question.
+    const strippedText = stripBotMentions(text, markup, ctx.myId, ctx.botInfo?.username);
+    if (!strippedText) return;
 
+    try {
+      await ctx.sendAction('typing_on');
+      const reply = await askGigaChat(chatId, strippedText);
+      await ctx.reply(reply);
+    } catch (error) {
+      console.error('[MAX Bot] Error processing message:', error);
+      await ctx.reply(
+        '⚠️ Произошла ошибка при обработке вашего запроса. Попробуйте ещё раз.',
+      );
+    }
+    return;
+  }
+
+  // Direct message — respond to everything
+  try {
+    await ctx.sendAction('typing_on');
     const reply = await askGigaChat(chatId, text);
     await ctx.reply(reply);
   } catch (error) {
@@ -157,6 +235,19 @@ bot.on('message_created', async (ctx) => {
       '⚠️ Произошла ошибка при обработке вашего запроса. Попробуйте ещё раз.',
     );
   }
+});
+
+// Greet the group when the bot is added to it
+bot.on('bot_added', (ctx) => {
+  const mention = ctx.botInfo?.username ? `@${ctx.botInfo.username}` : 'меня';
+  return ctx.reply(
+    '👋 Привет! Я AI-ассистент на базе GigaChat.\n\n' +
+    `Чтобы задать мне вопрос в этой группе, просто упомяните меня (${mention}) ` +
+    'в вашем сообщении.\n\n' +
+    'Команды:\n' +
+    '/help — справка\n' +
+    '/reset — сбросить историю диалога',
+  );
 });
 
 // Also greet user when they start a dialog via bot button

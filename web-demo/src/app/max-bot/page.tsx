@@ -1,12 +1,13 @@
 /**
  * MAX Bot Test UI
  * Allows testing MAX Messenger bot features: view bot info, list subscribers,
- * manage webhook registrations, and send test messages.
+ * manage webhook registrations, send test messages, and live-stream webhook events.
  */
 
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import type { WebhookEvent } from '@/lib/webhook-events';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -225,6 +226,7 @@ function WebhookSection() {
   const [loadingGet, setLoadingGet] = useState(false);
   const [loadingPost, setLoadingPost] = useState(false);
   const [loadingDelete, setLoadingDelete] = useState(false);
+  const [loadingDeleteAll, setLoadingDeleteAll] = useState(false);
   const [webhookUrl, setWebhookUrl] = useState('');
   const [subscriptions, setSubscriptions] = useState<WebhookSubscription[]>([]);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
@@ -311,6 +313,31 @@ function WebhookSection() {
     }
   };
 
+  const deleteAllWebhooks = async () => {
+    setLoadingDeleteAll(true);
+    clearMessage();
+    try {
+      const res = await fetch('/api/max-bot/webhook', { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        setSubscriptions([]);
+        const count = typeof data.deleted === 'number' ? data.deleted : null;
+        setMessage({
+          ok: true,
+          text: count !== null
+            ? `All ${count} webhook${count !== 1 ? 's' : ''} deleted successfully.`
+            : 'All webhooks deleted successfully.',
+        });
+      } else {
+        setMessage({ ok: false, text: data.error ?? 'Failed to delete webhooks' });
+      }
+    } catch (e) {
+      setMessage({ ok: false, text: e instanceof Error ? e.message : 'Unknown error' });
+    } finally {
+      setLoadingDeleteAll(false);
+    }
+  };
+
   return (
     <Card title="🔗 Webhook Management">
       <p style={{ marginBottom: '8px', color: '#555' }}>
@@ -386,9 +413,18 @@ function WebhookSection() {
           className="btn"
           style={{ background: '#dc3545', color: 'white' }}
           onClick={deleteWebhook}
-          disabled={loadingDelete}
+          disabled={loadingDelete || loadingDeleteAll}
         >
           {loadingDelete ? <><div className="spinner" />Deleting…</> : '🗑️ Delete Webhook'}
+        </button>
+        <button
+          className="btn"
+          style={{ background: '#8b0000', color: 'white' }}
+          onClick={deleteAllWebhooks}
+          disabled={loadingDeleteAll || loadingDelete}
+          title="Fetch all subscriptions and delete every one of them"
+        >
+          {loadingDeleteAll ? <><div className="spinner" />Deleting All…</> : '🧹 Delete All Webhooks'}
         </button>
       </div>
 
@@ -471,6 +507,179 @@ function SendMessageSection() {
   );
 }
 
+// ─── Section: Live Debug Stream ───────────────────────────────────────────────
+
+interface DebugEvent extends WebhookEvent {
+  id: string;
+}
+
+function eventColor(type: WebhookEvent['type']): string {
+  switch (type) {
+    case 'connected': return '#28a745';
+    case 'incoming_update': return '#17a2b8';
+    case 'gigachat_response': return '#667eea';
+    case 'bot_error': return '#dc3545';
+    default: return '#6c757d';
+  }
+}
+
+function eventLabel(type: WebhookEvent['type']): string {
+  switch (type) {
+    case 'connected': return '🟢 Connected';
+    case 'incoming_update': return '📥 Incoming';
+    case 'gigachat_response': return '🤖 GigaChat';
+    case 'bot_error': return '❌ Error';
+    default: return type;
+  }
+}
+
+function LiveDebugSection() {
+  const [isConnected, setIsConnected] = useState(false);
+  const [events, setEvents] = useState<DebugEvent[]>([]);
+  const eventSourceRef = useRef<EventSource | null>(null);
+  const logRef = useRef<HTMLDivElement | null>(null);
+
+  const connect = useCallback(() => {
+    if (eventSourceRef.current) return;
+
+    const es = new EventSource('/api/max-bot/events');
+    eventSourceRef.current = es;
+
+    es.onopen = () => setIsConnected(true);
+
+    es.onmessage = (e) => {
+      try {
+        const event = JSON.parse(e.data) as WebhookEvent;
+        const debug: DebugEvent = { ...event, id: crypto.randomUUID() };
+        setEvents((prev) => [debug, ...prev].slice(0, 200));
+      } catch { /* ignore malformed events */ }
+    };
+
+    es.onerror = () => {
+      setIsConnected(false);
+      es.close();
+      eventSourceRef.current = null;
+    };
+  }, []);
+
+  const disconnect = useCallback(() => {
+    eventSourceRef.current?.close();
+    eventSourceRef.current = null;
+    setIsConnected(false);
+  }, []);
+
+  // Cleanup on unmount
+  useEffect(() => () => disconnect(), [disconnect]);
+
+  return (
+    <Card title="📡 Live Debug Stream">
+      <p style={{ marginBottom: '12px', color: '#555', lineHeight: 1.6 }}>
+        Connect to the live event stream to see incoming MAX webhook updates and
+        GigaChat responses in real-time as they happen. Click <strong>Connect</strong> before
+        sending a message in MAX Messenger.
+      </p>
+
+      <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap' }}>
+        <button
+          className="btn btn-primary"
+          onClick={connect}
+          disabled={isConnected}
+        >
+          🔴 Connect
+        </button>
+        <button
+          className="btn"
+          style={{ background: '#6c757d', color: 'white' }}
+          onClick={disconnect}
+          disabled={!isConnected}
+        >
+          ⏹ Disconnect
+        </button>
+        <button
+          className="btn"
+          style={{ background: '#f8f9fa', color: '#333', border: '1px solid #dee2e6' }}
+          onClick={() => setEvents([])}
+        >
+          🗑 Clear
+        </button>
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span
+            style={{
+              width: 10, height: 10, borderRadius: '50%',
+              background: isConnected ? '#28a745' : '#dc3545',
+              display: 'inline-block',
+            }}
+          />
+          <span style={{ fontSize: '0.85rem', color: '#555' }}>
+            {isConnected ? 'Live' : 'Disconnected'}
+          </span>
+        </div>
+      </div>
+
+      {/* Event log */}
+      <div
+        ref={logRef}
+        style={{
+          height: '420px',
+          overflowY: 'auto',
+          background: '#0d1117',
+          borderRadius: '8px',
+          padding: '12px',
+          fontFamily: 'monospace',
+          fontSize: '0.8rem',
+          color: '#c9d1d9',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '8px',
+        }}
+      >
+        {events.length === 0 ? (
+          <p style={{ color: '#555', margin: 'auto', textAlign: 'center' }}>
+            {isConnected
+              ? '⏳ Waiting for events… send a message to the bot in MAX Messenger.'
+              : '▶ Click "Connect" to start the live stream.'}
+          </p>
+        ) : (
+          events.map((ev) => (
+            <div
+              key={ev.id}
+              style={{
+                borderLeft: `3px solid ${eventColor(ev.type)}`,
+                paddingLeft: '10px',
+                paddingTop: '4px',
+                paddingBottom: '4px',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                <span style={{ color: eventColor(ev.type), fontWeight: 600, fontSize: '0.75rem' }}>
+                  {eventLabel(ev.type)}
+                </span>
+                <span style={{ color: '#6e7681', fontSize: '0.7rem' }}>
+                  {new Date(ev.timestamp).toLocaleTimeString()}
+                </span>
+              </div>
+              {ev.chatId !== undefined && (
+                <div style={{ color: '#8b949e', fontSize: '0.72rem', marginBottom: '4px' }}>
+                  chat_id: {ev.chatId}
+                </div>
+              )}
+              <pre style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-all', color: '#c9d1d9', fontSize: '0.75rem' }}>
+                {JSON.stringify(ev.data, null, 2)}
+              </pre>
+            </div>
+          ))
+        )}
+      </div>
+
+      <p style={{ marginTop: '10px', fontSize: '0.8rem', color: '#888' }}>
+        Showing last {events.length} event{events.length !== 1 ? 's' : ''} (max 200).
+        {' '}Events are streamed in real-time via Server-Sent Events from{' '}
+        <code>/api/max-bot/events</code>.
+      </p>
+    </Card>
+  );
+}
+
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const tableStyle: React.CSSProperties = {
@@ -540,6 +749,7 @@ export default function MaxBotPage() {
       <ChatsSection />
       <WebhookSection />
       <SendMessageSection />
+      <LiveDebugSection />
     </>
   );
 }

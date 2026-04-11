@@ -11,6 +11,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getBot } from '@/lib/max-bot-instance';
+import { broadcast } from '@/lib/webhook-events';
 
 export async function POST(request: NextRequest) {
   const bot = getBot();
@@ -30,6 +31,9 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    // Broadcast the raw incoming update to any SSE debug clients.
+    broadcast({ type: 'incoming_update', timestamp: Date.now(), data: update });
+
     // Process the update without awaiting so MAX gets a 200 acknowledgement immediately.
     // handleUpdate is typed as private but is a public arrow-function property at runtime.
     const updatePromise = (
