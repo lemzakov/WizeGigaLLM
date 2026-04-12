@@ -46,8 +46,39 @@ const gigaChat = new GigaChat({
   maxTokens: 1024,
 });
 
-// Per-chat conversation history (in-memory, keyed by chat_id)
+// Per-chat conversation history (in-memory, keyed by chat_id or user_id)
 const conversationHistory = new Map<number, Array<HumanMessage | AIMessage>>();
+
+// ── Subscriber tracking ──────────────────────────────────────────────────────
+
+type SubscriberInfo = { name: string; username: string | null };
+
+/** In-memory set of all users who have started chatting with the bot. */
+const subscribers = new Map<number, SubscriberInfo>();
+
+/** Record a user as a subscriber (idempotent). Logs on first encounter. */
+function trackSubscriber(user: { user_id: number; name: string; username?: string | null } | null | undefined): void {
+  if (!user) return;
+  const isNew = !subscribers.has(user.user_id);
+  subscribers.set(user.user_id, { name: user.name, username: user.username ?? null });
+  if (isNew) {
+    const handle = user.username ? ` (@${user.username})` : '';
+    console.log(`[MAX Bot] New subscriber: ${user.name}${handle} — total subscribers: ${subscribers.size}`);
+  }
+}
+
+/** Log all known subscribers to the console. */
+function logAllSubscribers(): void {
+  if (subscribers.size === 0) {
+    console.log('[MAX Bot] No subscribers yet.');
+    return;
+  }
+  console.log(`[MAX Bot] All subscribers (${subscribers.size}):`);
+  for (const [userId, info] of subscribers) {
+    const handle = info.username ? ` (@${info.username})` : '';
+    console.log(`  • [${userId}] ${info.name}${handle}`);
+  }
+}
 
 // ── Group-chat mention helpers ────────────────────────────────────────────────
 
@@ -106,9 +137,10 @@ function stripBotMentions(
 /**
  * Send a message to GigaChat and return the AI reply.
  * Maintains per-chat conversation history for multi-turn dialogue.
+ * @param convKey - chat_id for group/channel chats; user_id for personal dialogs where chat_id is null.
  */
-async function askGigaChat(chatId: number, userText: string): Promise<string> {
-  const history = conversationHistory.get(chatId) ?? [];
+async function askGigaChat(convKey: number, userText: string): Promise<string> {
+  const history = conversationHistory.get(convKey) ?? [];
 
   // Build the message list: system prompt + history + new user message
   const userMessage = new HumanMessage(userText);
@@ -128,13 +160,33 @@ async function askGigaChat(chatId: number, userText: string): Promise<string> {
   const updatedHistory = [...history, userMessage, new AIMessage(replyText)];
   const MAX_HISTORY_MESSAGES_COUNT = 40;
   conversationHistory.set(
-    chatId,
+    convKey,
     updatedHistory.length > MAX_HISTORY_MESSAGES_COUNT
       ? updatedHistory.slice(updatedHistory.length - MAX_HISTORY_MESSAGES_COUNT)
       : updatedHistory,
   );
 
   return replyText;
+}
+
+// ── Reply helper ─────────────────────────────────────────────────────────────
+
+/**
+ * Send a text reply in the correct context.
+ * - For group/channel chats (chat_id is valid): uses ctx.reply().
+ * - For personal chats where chat_id is null: falls back to sendMessageToUser().
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function sendReply(ctx: any, text: string): Promise<void> {
+  const chatId = ctx.chatId as number | null | undefined;
+  if (chatId !== null && chatId !== undefined) {
+    await ctx.reply(text);
+  } else {
+    const senderId = (ctx.user as { user_id?: number } | undefined)?.user_id;
+    if (senderId !== undefined) {
+      await ctx.api.sendMessageToUser(senderId, text);
+    }
+  }
 }
 
 // ── MAX Bot ──────────────────────────────────────────────────────────────────
@@ -149,12 +201,16 @@ bot.api.setMyCommands([
 ]);
 
 // /start — greeting
-bot.command('start', (ctx) => {
+bot.command('start', async (ctx) => {
+  trackSubscriber(ctx.message?.sender);
   const chatId = ctx.chatId;
-  if (chatId !== undefined) {
-    conversationHistory.delete(chatId);
+  const senderId = ctx.message?.sender?.user_id;
+  const convKey = chatId ?? senderId;
+  if (convKey !== null && convKey !== undefined) {
+    conversationHistory.delete(convKey);
   }
-  return ctx.reply(
+  return sendReply(
+    ctx,
     'Привет! 👋 Я AI-ассистент на базе GigaChat.\n\n' +
     'Задайте мне любой вопрос, и я постараюсь помочь.\n\n' +
     'Команды:\n' +
@@ -165,7 +221,8 @@ bot.command('start', (ctx) => {
 
 // /help — usage information
 bot.command('help', (ctx) =>
-  ctx.reply(
+  sendReply(
+    ctx,
     'ℹ️ *Как пользоваться ботом:*\n\n' +
     '• Просто напишите любой вопрос или сообщение\n' +
     '• Бот помнит контекст вашего диалога\n\n' +
@@ -177,22 +234,26 @@ bot.command('help', (ctx) =>
 );
 
 // /reset — clear conversation history for this chat
-bot.command('reset', (ctx) => {
+bot.command('reset', async (ctx) => {
   const chatId = ctx.chatId;
-  if (chatId !== undefined) {
-    conversationHistory.delete(chatId);
+  const senderId = ctx.message?.sender?.user_id;
+  const convKey = chatId ?? senderId;
+  if (convKey !== null && convKey !== undefined) {
+    conversationHistory.delete(convKey);
   }
-  return ctx.reply('🔄 История диалога очищена. Можем начать с чистого листа!');
+  return sendReply(ctx, '🔄 История диалога очищена. Можем начать с чистого листа!');
 });
 
 // Handle all other text messages
 bot.on('message_created', async (ctx) => {
   const msg = ctx.message;
   const text = msg?.body?.text;
-  const chatId = ctx.chatId;
+  const chatId = ctx.chatId as number | null | undefined;
+  const senderId = msg?.sender?.user_id;
   const chatType = msg?.recipient?.chat_type;
 
-  if (!text || chatId === undefined) {
+  // Need text and at least one way to identify / reach the sender
+  if (!text || (chatId == null && senderId === undefined)) {
     return;
   }
 
@@ -212,28 +273,28 @@ bot.on('message_created', async (ctx) => {
     if (!strippedText) return;
 
     try {
-      await ctx.sendAction('typing_on');
-      const reply = await askGigaChat(chatId, strippedText);
-      await ctx.reply(reply);
+      if (chatId !== null && chatId !== undefined) await ctx.sendAction('typing_on');
+      const convKey = chatId ?? senderId!;
+      const reply = await askGigaChat(convKey, strippedText);
+      await sendReply(ctx, reply);
     } catch (error) {
       console.error('[MAX Bot] Error processing message:', error);
-      await ctx.reply(
-        '⚠️ Произошла ошибка при обработке вашего запроса. Попробуйте ещё раз.',
-      );
+      await sendReply(ctx, '⚠️ Произошла ошибка при обработке вашего запроса. Попробуйте ещё раз.');
     }
     return;
   }
 
-  // Direct message — respond to everything
+  // Personal (dialog) or channel message — respond to everything and track subscriber
+  trackSubscriber(msg?.sender);
+  const convKey = chatId ?? senderId!;
+
   try {
-    await ctx.sendAction('typing_on');
-    const reply = await askGigaChat(chatId, text);
-    await ctx.reply(reply);
+    if (chatId !== null && chatId !== undefined) await ctx.sendAction('typing_on');
+    const reply = await askGigaChat(convKey, text);
+    await sendReply(ctx, reply);
   } catch (error) {
     console.error('[MAX Bot] Error processing message:', error);
-    await ctx.reply(
-      '⚠️ Произошла ошибка при обработке вашего запроса. Попробуйте ещё раз.',
-    );
+    await sendReply(ctx, '⚠️ Произошла ошибка при обработке вашего запроса. Попробуйте ещё раз.');
   }
 });
 
@@ -252,6 +313,7 @@ bot.on('bot_added', (ctx) => {
 
 // Also greet user when they start a dialog via bot button
 bot.on('bot_started', (ctx) => {
+  trackSubscriber(ctx.user);
   const chatId = ctx.chatId;
   if (chatId !== undefined) {
     conversationHistory.delete(chatId);
@@ -268,7 +330,7 @@ bot.on('bot_started', (ctx) => {
 // Global error handler — log the error and continue (do not crash the bot)
 bot.catch((err, ctx) => {
   console.error('[MAX Bot] Unhandled error:', err);
-  ctx?.reply('⚠️ Произошла непредвиденная ошибка. Попробуйте позже.').catch(() => {});
+  sendReply(ctx, '⚠️ Произошла непредвиденная ошибка. Попробуйте позже.').catch(() => {});
 });
 
 // ── Start ────────────────────────────────────────────────────────────────────
@@ -276,3 +338,4 @@ bot.catch((err, ctx) => {
 console.log(`[MAX Bot] Starting bot (model: ${GIGACHAT_MODEL})…`);
 bot.start();
 console.log('[MAX Bot] Bot is running and polling for updates.');
+logAllSubscribers();
