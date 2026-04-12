@@ -176,13 +176,19 @@ async function askGigaChat(convKey: number, userText: string): Promise<string> {
  * - For group/channel chats (chat_id is valid): uses ctx.reply().
  * - For personal chats where chat_id is null: falls back to sendMessageToUser().
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function sendReply(ctx: any, text: string): Promise<void> {
-  const chatId = ctx.chatId as number | null | undefined;
+type ReplyContext = {
+  chatId: number | null | undefined;
+  user?: { user_id?: number } | null;
+  reply(text: string): Promise<unknown>;
+  api: { sendMessageToUser(userId: number, text: string): Promise<unknown> };
+};
+
+async function sendReply(ctx: ReplyContext, text: string): Promise<void> {
+  const chatId = ctx.chatId;
   if (chatId !== null && chatId !== undefined) {
     await ctx.reply(text);
   } else {
-    const senderId = (ctx.user as { user_id?: number } | undefined)?.user_id;
+    const senderId = ctx.user?.user_id;
     if (senderId !== undefined) {
       await ctx.api.sendMessageToUser(senderId, text);
     }
@@ -274,7 +280,8 @@ bot.on('message_created', async (ctx) => {
 
     try {
       if (chatId !== null && chatId !== undefined) await ctx.sendAction('typing_on');
-      const convKey = chatId ?? senderId!;
+      const convKey = chatId ?? senderId;
+      if (convKey == null) return;
       const reply = await askGigaChat(convKey, strippedText);
       await sendReply(ctx, reply);
     } catch (error) {
@@ -286,7 +293,8 @@ bot.on('message_created', async (ctx) => {
 
   // Personal (dialog) or channel message — respond to everything and track subscriber
   trackSubscriber(msg?.sender);
-  const convKey = chatId ?? senderId!;
+  const convKey = chatId ?? senderId;
+  if (convKey == null) return;
 
   try {
     if (chatId !== null && chatId !== undefined) await ctx.sendAction('typing_on');
